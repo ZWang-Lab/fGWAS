@@ -1,0 +1,297 @@
+check_ids<-function( obj.gen, obj.phe )
+{
+	stopifnot( all(rownames(obj.phe$pheT)==rownames(obj.phe$pheX)) && all(rownames(obj.phe$pheX)==rownames(obj.phe$pheY)) )
+
+	ids.phe <- rownames(obj.phe$pheY);
+	ids.gen <- obj.gen$reader$get_individuals();
+
+	m.phe <- match( as.character(ids.phe), as.character(ids.gen)  );
+	if (length(which(is.na(m.phe))) > 0 )
+	{
+		cat("!", length(which(is.na(m.phe))), "IDs, can not be found in the PLINK file.\n" );
+		cat("! First 5 IDs:\n");
+		show( head(ids.gen[is.na(m.phe), ], n=5 ) );
+	}
+
+	m.snp <- match( as.character(ids.gen) , as.character(ids.phe) );
+	if (length(which(is.na(m.snp))) > 0 )
+	{
+		cat("!", length(which(is.na(m.snp))), "IDs, can not be found in the phenotype file.\n" );
+		cat("! First 5 IDs:\n");
+		show( head(phe.fam[is.na(m.snp), ], n=5 ) );
+	}
+
+	ids.com <- intersect( ids.phe, ids.gen);
+	return(ids.com);
+}
+
+fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.type=NULL, snp.sub = NULL, permutation=NULL, options=list())
+{
+	stopifnot( class(obj.gen)=="fgwas.gen.obj" && class(obj.phe)=="fgwas.phe.obj")
+
+	default_options <- list( intercept=F, max.loop=5, order=3, ncores=1, verbose=TRUE);
+	default_options[names(options)] <- options;
+	options <- default_options;
+	options$opt.method <- toupper(method);
+
+	cat( "[ SNP Scanning ] \n");
+
+	ids.com <- check_ids(obj.gen, obj.phe);
+	obj.phe <- select_individuals( obj.phe, ids.com );
+	obj.gen$reader$select_individuals( ids.com );
+
+	if(toupper(method )!="GLS" && toupper(method )!="MIXED")
+	{
+		if(is.null(curve.type) && inherits( obj.phe$obj.curve, "fg.curve.base") )
+			curve.type <- obj.phe$obj.curve@type;
+		if(is.null(covariance.type) && inherits( obj.phe$obj.covar, "fg.covariance.base") )
+			covariance.type <- obj.phe$obj.covar@type;
+		if( toupper(curve.type )!= toupper(obj.phe$obj.curve@type) || toupper(covariance.type) != toupper(obj.phe$obj.covar@type ) )
+			obj.phe <- fg_dat_est( obj.phe, curve.type, covariance.type );
+	}
+
+	cat( "Genetic Effect Analysis by '", method,"' method......\n", sep="");
+
+	ret <- list( error=FALSE );
+	if(is.null(snp.sub)) snp.sub <- 1:obj.gen$n.snp;
+
+	if(is.character(snp.sub))
+	{
+		snp.sub <- obj.gen$reader$get_snpindex( snp.sub );
+		snp.sub <- snp.sub  [ which(!is.na(snp.sub)) ];
+	}
+
+	if (length(snp.sub)==0)
+		stop("No SNPs found in the genotype file.");
+
+	if( toupper(method )=="GLS")
+	{
+		r.time <- system.time( r <- snpscan_nocurve( obj.gen, obj.phe, snp.sub, options ) );
+		if (r$error)
+			stop(r$err.info);
+		r$system.time <- r.time;
+		ret$ret.gls <- r;
+		ret$ret.gls <- r;
+	}
+
+	if( toupper(method )=="MIXED")
+	{
+		r.time <- system.time( r <- fg_mixed_scan( obj.gen, obj.phe, snp.sub, order=options$order, ncores=options$ncores ) );
+		if (r$error)
+			stop(r$err.info);
+
+		r$system.time <- r.time;
+		ret$ret.mixed <- r;
+	}
+
+	if( toupper(method )=="FAST" || toupper(method )=="FAST-NORM")
+	{
+		if(is.null(obj.phe$est.curve))
+			obj.phe <- fg_dat_est( obj.phe, options );
+		obj.phe$h0 <- proc_est_h0( obj.phe, options );
+
+		r.time <- system.time( r <- snpsnp_curve( obj.gen, obj.phe, snp.sub, options ) );
+		if (r$error)
+			stop(r$err.info);
+
+		r$system.time <- r.time;
+		ret$ret.fast <- r;
+	}
+
+	if( toupper(method )=="FGWAS" || toupper(method )=="OPTIM-FGWAS")
+	{
+		if(is.null(obj.phe$est.curve))
+			obj.phe <- fg_dat_est( obj.phe, options );
+		obj.phe$h0 <- proc_est_h0( obj.phe, options );
+
+		#r.cluster <- snp_cluster(obj.gen, snp.sub, dist=20 );
+		r.time <- system.time( r <- snpsnp_curve( obj.gen, obj.phe, snp.sub, options ) );
+		if (r$error)
+			stop(r$err.info);
+
+		r$system.time <- r.time;
+		ret$ret.fgwas <- r;
+	}
+
+
+	ret$obj.gen <- obj.gen;
+	ret$obj.phe <- obj.phe;
+
+	class(ret) <- "fgwas.scan.obj";
+
+	## dont load plink data, just scanning result object
+	return( ret );
+}
+
+
+snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
+{
+	if(is.null(snp.idx)) snp.idx <- 1:obj.gen$n.snp
+	snp.len <- length(snp.idx);
+	snp.sect0 <- seq( 1, snp.len, 1000 );
+	snp.sect1 <- c( snp.sect0[-1]-1, snp.len );
+
+	intercept <- ifelse(is.null(obj.phe$params$intercept), FALSE, obj.phe$params$intercept );
+	r.list <- list();
+
+	for(i in 1:length(snp.sect0))
+	{
+		cpu.fun<-function( k )
+		{
+			## dont use requireNamespace method which doesnt call .onAttach() hook.
+			##requireNamespace("fGWAS");
+			require(fGWAS);
+			r.mle<- try( proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options ), FALSE );
+			return( r.mle );
+		}
+
+		if(options$verbose)	cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
+
+		snp.idx.sub <- snp.idx[ snp.sect0[i]:snp.sect1[i] ];
+		snp.mat  <- obj.gen$reader$get_snpmat( snp.idx.sub);
+		snp.info <- obj.gen$reader$get_snpinfo( snp.idx.sub);
+
+		r.cluster <- list();
+		#if( options$ncores>1 && require(snowfall) )
+		#{
+		#	cat("Starting parallel computing, snowfall/snow......\n");
+		#	sfInit(parallel = TRUE, cpus = options$ncores, type = "SOCK")
+		#
+		#	sfExport("snp.idx.sub", "snp.mat", "snp.info", "obj.phe", "options" );
+		#
+		#	r.cluster <- sfClusterApplyLB( 1:NROW(snp.idx.sub), cpu.fun );
+		#
+		#	sfStop();
+		#
+		#	cat("Stopping parallel computing......\n");
+		#}
+		#else
+		#{
+			cat("Starting piecewise analysis......\n");
+			#for(k in 1:NCOL(snp.idx.sub) )
+			#	r.cluster[[k]] <- cpu.fun( k );
+
+			r.cluster <- mclapply( 1:NROW(snp.idx.sub), cpu.fun, mc.cores=options$ncores );
+
+			cat("Stopping......\n");
+		#}
+
+		r.list[[i]] <- do.call( "rbind", r.cluster );
+	}
+
+	r.fgwas <- do.call( "rbind", r.list );
+
+	curve.par.names <- get_param_info( obj.phe$obj.curve, obj.phe$pheT )$names;
+	covar.par.names <- get_param_info( obj.phe$obj.covar, obj.phe$pheT )$names;
+	par.curve.len   <- get_param_info( obj.phe$obj.curve, obj.phe$pheT )$count;
+	par.covar.len   <- get_param_info( obj.phe$obj.covar, obj.phe$pheT )$count;
+
+	re.names <- colnames(r.fgwas);
+	re.names[1:4] <- c("INDEX", "NAME", "CHR", "POS");
+	re.names[5:13] <- c("MAF", "NMISS", "SNP0", "SNP1", "SNP2", "GENO", "LR", "pv", "L0");
+
+	if(intercept)
+		par.X.len <- ifelse( is.null(obj.phe$pheX), 1, 1+NCOL(obj.phe$pheX) )
+	else
+		par.X.len <- ifelse( is.null(obj.phe$pheX), 0, NCOL(obj.phe$pheX) );
+
+	idx.start <- 14;
+	if(par.X.len>0)
+	{
+		re.names[idx.start:(idx.start+par.X.len-1)] <- paste("h0.X", c(1:par.X.len)-ifelse(intercept,1,0), sep="")
+		idx.start <- idx.start + par.X.len
+	}
+
+	re.names[idx.start:(idx.start+par.curve.len-1)] <- paste("h0", curve.par.names, sep=".")
+	idx.start <- idx.start+par.curve.len
+	re.names[idx.start:(idx.start + par.covar.len-1)] <- paste("h0X", covar.par.names, sep=".")
+	idx.start <- idx.start + par.covar.len
+	re.names[idx.start] <- "L1";
+	idx.start <- idx.start + 1
+	if(par.X.len>0)
+	{
+		re.names[idx.start:(idx.start + par.X.len-1)] <- paste("h1.X", c(1:par.X.len)-ifelse(intercept,1,0), sep="")
+		idx.start <- idx.start + par.X.len
+	}
+
+	re.names[idx.start:(idx.start+par.curve.len-1)] <- paste("h1.G0", curve.par.names, sep=".")
+	idx.start <- idx.start+par.curve.len
+	re.names[idx.start:(idx.start+par.curve.len-1)] <- paste("h1.G1", curve.par.names, sep=".")
+	idx.start <- idx.start+par.curve.len
+	re.names[idx.start:(idx.start+par.curve.len-1)] <- paste("h1.G2", curve.par.names, sep=".")
+	idx.start <- idx.start+par.curve.len
+	re.names[idx.start:(idx.start+par.covar.len-1)] <- paste("h1X", covar.par.names, sep=".")
+
+	colnames(r.fgwas ) <- re.names;
+	rownames(r.fgwas ) <- r.fgwas$NAME;
+
+	return(list(error=F, result=r.fgwas));
+}
+
+snp_cluster <- function(obj.gen, snp.idx=NULL, dist=3 )
+{
+	get_min_dist<-function( snp0 )
+	{
+		min_dist_a0a1a2<-function(a0,a1,a2)
+		{
+			snpx <- snp0;
+			snpx[which(snp0==0)]<-a0
+			snpx[which(snp0==1)]<-a1;
+			snpx[which(snp0==2)]<-a2;
+
+			dists <- unlist( lapply(1:length(r.cluster), function(grp){
+				sum( snpx - r.cluster[[grp]]$snp0 != 0, na.rm=T ) ;
+			}));
+
+			return(list(min.grp=which.min(dists), dist=min(dists, na.rm=T) ) );
+		}
+
+		d1 <- min_dist_a0a1a2(0, 1, 2)
+		d2 <- min_dist_a0a1a2(0, 2, 1)
+		d3 <- min_dist_a0a1a2(1, 0, 2)
+		d4 <- min_dist_a0a1a2(1, 2, 0)
+		d5 <- min_dist_a0a1a2(2, 0, 1)
+		d6 <- min_dist_a0a1a2(2, 1, 0)
+
+		min.grp=c(d1$min.grp, d2$min.grp, d3$min.grp, d4$min.grp, d5$min.grp, d6$min.grp);
+		min.dist=c(d1$dist,    d2$dist,    d3$dist,    d4$dist,    d5$dist,    d6$dist);
+
+		idx <- which.min( min.dist );
+
+		return(list( min.grp=min.grp[idx], dist=min.dist[idx] ) );
+	}
+
+	if(is.null(snp.idx)) snp.idx <- 1:obj.gen$n.snp
+	snp.len <- length(snp.idx);
+	snp.sect0 <- seq( 1, snp.len, 1000 );
+	snp.sect1 <- c( snp.sect0[-1]-1, snp.len );
+
+	snp.idx.sub <- snp.idx[ snp.sect0[1]:snp.sect1[1] ];
+	snp.mat  <- obj.gen$reader$get_snpmat( snp.idx.sub);
+
+	r.cluster <- list();
+	r.cluster[[1]] <- list(snp0=snp.mat$snpmat[,1], grp=c(snp.idx[ snp.sect0[1] ]) )
+
+	for(i in 1:length(snp.sect0))
+	{
+		#if(options$verbose)
+		cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
+
+		snp.idx.sub <- snp.idx[ snp.sect0[i]:snp.sect1[i] ];
+		snp.mat  <- obj.gen$reader$get_snpmat( snp.idx.sub);
+
+		for(k in 1:NROW(snp.idx.sub))
+		{
+			min.dist <- get_min_dist( snp.mat$snpmat[,k] )
+			cat(k, min.dist$dist, min.dist$min.grp, "\n" );
+			if(min.dist$dist<=dist)
+				r.cluster[[min.dist$min.grp]]$grp <- c(r.cluster[[min.dist$min.grp]]$grp, snp.idx.sub[k])
+			else
+			{
+				r.cluster[[length(r.cluster) +1 ]] <- list(snp0=snp.mat$snpmat[,k], grp=c(snp.idx.sub[k]) )
+			}
+		}
+	}
+
+	return(r.cluster);
+}
