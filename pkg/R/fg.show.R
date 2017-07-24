@@ -83,7 +83,6 @@ summary_fgwas_gen_obj <- function(object)
 #  ..$ file.phe.time  : chr "/tmp/RtmpYrkzlf/fileda148740849.csv"
 #  ..$ curve.type     : chr "auto"
 #  ..$ covariance.type: chr "auto"
-#  ..$ intercept
 # $ pheY     : num [1:1678, 1:8] 20.5 28.5 19.5 26.1 28.4 ...
 #  ..- attr(*, "dimnames")=List of 2
 #  .. ..$ : chr [1:1678] "8228" "2294" "7395" "309" ...
@@ -106,7 +105,7 @@ summary_fgwas_gen_obj <- function(object)
 #  .. ..@ description: chr "AR1"
 # $ est.curve:List of 7
 #  ..$ type       : chr "Logistic"
-#  ..$ intercept  : True or FLASE 
+#  ..$ intercept  : True or FLASE
 #  ..$ param      : Named num [1:3] 36 39.8 29.5
 #  .. ..- attr(*, "names")= chr [1:3] "" "" ""
 #  ..$ param.lower: num [1:3] 34.1 35.9 26.6
@@ -115,10 +114,11 @@ summary_fgwas_gen_obj <- function(object)
 #  .. ..- attr(*, "names")= chr [1:7] "" "X_1" "X_2" "X_3" ...
 #  ..$ parX.lower : num [1:7] -8.8828 -1.9554 -9.0214 0.0122 -12.7226 ...
 #  ..$ parX.upper : num [1:7] -5.1 -1.29 13.85 15.07 1.86 ...
+#  ..$ R2         : num 0.846
 # $ est.covar:List of 2
 #  ..$ type : chr "AR1"
 #  ..$ param: num [1:2] 0.907 19.916
-#
+# $ intercept
 #
 # - attr(*, "class")= chr "fgwas.phe.obj"
 
@@ -133,7 +133,7 @@ print_fgwas_phe_obj <- function(object)
 	print_item( " -- Time count", ifelse( is.null(object$pheT), 0, NCOL(object$pheT) ) );
 	print_item( "Covariate file", object$params$file.phe.cov );
 	print_item( " -- Covariate count", ifelse( is.null(object$pheX), 0, NCOL(object$pheX) ) );
-	print_item( " -- Intercept", ifelse( object$params$intercept, "YES", "NO") );
+	print_item( " -- Intercept", ifelse( object$intercept, "YES", "NO") );
 	print_item( " -- Estimate values", if(!is.null(object$est.curve)) object$est.curve$parX else "N/A" );
 
 	print_item( "Curve type", object$params$curve.type );
@@ -143,6 +143,7 @@ print_fgwas_phe_obj <- function(object)
 	{
 		print_item( " -- Estimate type", object$est.curve$type );
 		print_item( " -- Estimate values", object$est.curve$param );
+		print_item( " -- R2 ", object$est.curve$R2 );
 	}
 
 	print_item( "Covariate type", object$params$covariance.type );
@@ -164,7 +165,7 @@ summary_fgwas_phe_obj <- function(object)
 	if( !is.null(object$pheT))
 		df <- cbind(df, object$pheT[match(rownames(object$pheY), rownames(object$pheT)), ,drop=F]);
 
-	return(summary(df));
+	return(df);
 }
 
 # 'fgwas.scan.obj':
@@ -236,36 +237,52 @@ summary_fgwas_phe_obj <- function(object)
 
 print_fgwas_scan_obj <- function(object)
 {
-	cat("== fGWAS result ==\n");
-
 	show_sigsnp <- function( df, method )
 	{
-		cat(" ... ", method , "method ...\n");
+		cat("== Result from '", method, "' method ==\n");
 		cat(" SNP = ", NROW(df),"\n")
 		show(head(df[ order(df[,"pv"],decreasing=F),
 			c("INDEX", "NAME","CHR", "POS", "MAF","NMISS", "pv")], n=20));
 	}
 
-	if(!is.null(object$ret.gls)) show_sigsnp( object$ret.gls$result, "GLS" );
+	ret.item="";
+	if(!is.null(object$ret.gls)) {
+		ret.item <- "ret.gls";
+		show_sigsnp( object$ret.gls$result, "GLS" );
+	}
 
-	if(!is.null(object$ret.mixed)) show_sigsnp( object$ret.mixed$result, "Mixed" );
+	if(!is.null(object$ret.mixed)) {
+		ret.item <- "ret.mixed";
+		show_sigsnp( object$ret.mixed$result, "Mixed" );
+	}
 
-	if(!is.null(object$ret.fast)) show_sigsnp( object$ret.fast$result, "FAST" );
+	if(!is.null(object$ret.fast)) {
+		ret.item <- "ret.fast";
+		show_sigsnp( object$ret.fast$result, "FAST" );
+	}
 
-	if(!is.null(object$ret.fgwas)) show_sigsnp( object$ret.fgwas$result, "fGWAS"  );
+	if(!is.null(object$ret.fgwas)) {
+		ret.item <- "ret.fgwas";
+		show_sigsnp( object$ret.fgwas$result, "fGWAS"  );
+	}
+
+	cat(paste("\nCheck all SNPs using this variable: 'your_object$", ret.item, "$result'.\n", sep=""));
 }
 
 summary_fgwas_scan_obj <- function(object)
 {
 	ret <- list();
-	if(is.null(object$ret.gls))
-		ret$gls <- object$ret.gls$result;
+	if(!is.null(object$ret.gls))
+		ret <- object$ret.gls$result;
 
-	if(is.null(object$ret.fast))
-		ret$fast <- object$ret.fast$result;
+	if(!is.null(object$ret.mixed))
+		ret <- object$ret.mixed$result;
 
-	if(is.null(object$ret.fgwas))
-		ret$fgwas <- object$ret.fgwas$result;
+	if(!is.null(object$ret.fast))
+		ret <- object$ret.fast$result;
+
+	if(!is.null(object$ret.fgwas))
+		ret <- object$ret.fgwas$result;
 
 	return(ret);
 }
@@ -294,8 +311,6 @@ fg_select_sigsnp <- function( obj.scan, sig.level = 0.05, pv.adjust="bonferoni",
 plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, ... )
 {
 	object <- x;
-
-cat("file.pdf=", file.pdf, "\n");
 
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", tmpdir=getwd(), fileext=".pdf");
@@ -328,9 +343,27 @@ cat("file.pdf=", file.pdf, "\n");
 
 	dev.off();
 
-	cat("Output manhattan figure(s) into ", file.pdf, "\n")
+	cat(" Output manhattan figure(s) into ", file.pdf, "\n")
 	invisible(file.pdf);
 }
+
+plot_fgwas_phe_obj<-function( obj.phe, file.pdf, curve.fitting, ...)
+{
+	if( missing(file.pdf) || is.null(file.pdf) )
+		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");
+
+	pdf(file.pdf, width=6, height=5)
+	if( curve.fitting && (is.null(obj.phe$est.curve) || is.null(obj.phe$est.covar)))
+		obj.phe <- fg_dat_est( obj.phe, obj.phe$obj.curve@type, obj.phe$obj.covar@type );
+
+	par_h0 <- c( obj.phe$est.curve$parX, obj.phe$est.curve$param, obj.phe$est.covar$param);
+	fpt.plot_curve ( obj.phe, unlist(par_h0), NULL, NULL, extra=list());
+
+	dev.off();
+
+	cat(" Output curve figure(s) into ", file.pdf, "\n")
+}
+
 
 plot_fgwas_curve<-function( object, snp.set, file.pdf )
 {
@@ -356,7 +389,8 @@ plot_fgwas_curve<-function( object, snp.set, file.pdf )
 	snp.info <- object$obj.gen$reader$get_snpinfo( ret$INDEX[snp.index] );
 	ret.set  <- ret[snp.index,, drop=F]
 
-	par_x_num <- ifelse( is.null( object$obj.phe$pheX ), 1 , 1+NCOL( object$obj.phe$pheX ) );
+	par_x_num <- ifelse( is.null( object$obj.phe$pheX ), 0 , NCOL( object$obj.phe$pheX ) ) +
+	             ifelse (object$obj.phe$intercept, 1, 0) ;
 	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$pheT )$count;
 	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$pheT )$count;
 
@@ -377,7 +411,7 @@ plot_fgwas_curve<-function( object, snp.set, file.pdf )
 
 	dev.off();
 
-	cat("Output curve figure(s) into ", file.pdf, "\n")
+	cat(" Output curve figure(s) into ", file.pdf, "\n")
 
 }
 
@@ -404,10 +438,10 @@ profile_fgwas_curve<-function( object, snp.set )
 	par_x_num <- ifelse( is.null( object$obj.phe$pheX ), 1 , 1+NCOL( object$obj.phe$pheX ) );
 	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$pheT )$count;
 	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$pheT )$count;
-	
+
 	options <- list();
-	options$max.time=max(obj.phe$pheT, na.rm=T);
-	options$min.time=min(obj.phe$pheT, na.rm=T);
+	options$max.time=max(object$obj.phe$pheT, na.rm=T);
+	options$min.time=min(object$obj.phe$pheT, na.rm=T);
 
 	h0.pv <- c();
 	h1.pv <- c();
@@ -431,7 +465,7 @@ fpt.profile <- function( obj.phe, par_h0, par_h1, snp.vec, options)
 		X.cov <- matrix( pheX0 %*% par_X, ncol=1, byrow=T) %*% matrix(rep(1,NCOL(pheT0)), nrow=1, byrow=T)
 		Y.delt <- pheY0 - get_curve( obj.phe$obj.curve, par_curve, pheT0, options=options )  - X.cov;
 		mat.cov <- get_matrix( obj.phe$obj.covar, par_covar, pheT0 );
-		pv <- try( dmvnorm_fast( Y.delt, rep(0,NROW(mat.cov)), mat.cov, NULL, log=T), .RR("try.slient") );
+		pv <- try( dmvnorm_fast( Y.delt, rep(0,NROW(mat.cov)), mat.cov, NULL, log=T), .RR("try.silent") );
 
 		return(pv);
 	}
@@ -440,12 +474,12 @@ fpt.profile <- function( obj.phe, par_h0, par_h1, snp.vec, options)
 	pheX <- obj.phe$pheX;
 	pheT <- obj.phe$pheT;
 
-	if ( obj.phe$params$intercept ) 
+	if ( obj.phe$intercept )
 		if (is.null(pheX)) pheX <- matrix( 1, nrow=NROW(pheY), ncol=1 ) else pheX <- cbind(1, pheX);
 
 	par_x_num <- ifelse( is.null( pheX ), 0 , NCOL( pheX ) );
 	par_curve_num <- get_param_info(obj.phe$obj.curve, pheT )$count;
-	
+
 	par_x <- c();
 	if(par_x_num>0)	par_x <- par_h0[1:par_x_num]
 	h0.pv <- get_est_vector( pheY, pheX, pheT, par_x, par_h0[(par_x_num+1):(par_x_num+par_curve_num)], par_h0[-c(1:(par_x_num+par_curve_num))] );
@@ -459,13 +493,16 @@ fpt.profile <- function( obj.phe, par_h0, par_h1, snp.vec, options)
 
 	h1.pv <- rep(NA, length(h0.pv))
 	if(length(snp0.idx)>0)
-		h1.pv[snp0.idx] <- get_est_vector( pheY[snp0.idx,,drop=F], pheX[snp0.idx,,drop=F], pheT[snp0.idx,,drop=F], par_x, par_h1[(par_x_num+1):(par_x_num+par_curve_num)], par_h1[-c(1:(par_x_num+par_curve_num*3))] );
+		h1.pv[snp0.idx] <- get_est_vector( pheY[snp0.idx,,drop=F], pheX[snp0.idx,,drop=F], pheT[snp0.idx,,drop=F],
+		       par_x, par_h1[(par_x_num+1):(par_x_num+par_curve_num)], par_h1[-c(1:(par_x_num+par_curve_num*3))] );
 
 	if(length(snp1.idx)>0)
-		h1.pv[snp1.idx] <- get_est_vector( pheY[snp1.idx,,drop=F], pheX[snp1.idx,,drop=F], pheT[snp1.idx,,drop=F], par_x, par_h1[(par_x_num+1+par_curve_num):(par_x_num+par_curve_num*2)], par_h1[-c(1:(par_x_num+par_curve_num*3))]);
+		h1.pv[snp1.idx] <- get_est_vector( pheY[snp1.idx,,drop=F], pheX[snp1.idx,,drop=F], pheT[snp1.idx,,drop=F],
+		       par_x, par_h1[(par_x_num+1+par_curve_num):(par_x_num+par_curve_num*2)], par_h1[-c(1:(par_x_num+par_curve_num*3))]);
 
 	if(length(snp2.idx)>0)
-		h1.pv[snp2.idx] <- get_est_vector( pheY[snp2.idx,,drop=F], pheX[snp2.idx,,drop=F], pheT[snp2.idx,,drop=F], par_x, par_h1[(par_x_num+1+par_curve_num*2):(par_x_num+par_curve_num*3)], par_h1[-c(1:(par_x_num+par_curve_num*3))]);
+		h1.pv[snp2.idx] <- get_est_vector( pheY[snp2.idx,,drop=F], pheX[snp2.idx,,drop=F], pheT[snp2.idx,,drop=F],
+		      par_x, par_h1[(par_x_num+1+par_curve_num*2):(par_x_num+par_curve_num*3)], par_h1[-c(1:(par_x_num+par_curve_num*3))]);
 
 	return(rbind(h0.pv, h1.pv));
 }

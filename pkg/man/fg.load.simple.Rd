@@ -4,13 +4,13 @@
 Loading simple SNP file 
 }
 \description{
-Loading the SNP data from very simple text file
+Loading the SNP data from simple text file
 }
 \usage{
 fg.load.simple( file.simple.snp, options=list())
 }
 \arguments{
-  \item{file.simple.snp}{string, text file name of SNP data. This text file encodes genotype type as 0,1,2  and SNP information in the 1st column to 3rd column ( SNP name, chromosome and BP). The other column names are the individuals ID.}
+  \item{file.simple.snp}{string, CSV file name of SNP data, the format is described in the details. }
   \item{options}{List}
 }
 \value{
@@ -26,9 +26,20 @@ A S3 object (\code{fgwas.gen.obj}) is returned by this function, including:\cr
 
 }
 \details{
+
+This CSV file contains SNP information and individual SNPs. 
+The SNP information, including SNP name, chromosome and BP, are located from the 1st column to 3rd column. 
+The individual SNPs follows the SNP information at each row, encoding genotype type as 0,1,2 or NA (for missing data).
+
+\preformatted{	
+CHR,POS,Sub1,Sub2,Sub3,Sub4,Sub5,...
+0,1, 2, 0, 1, 1, 1, ...
+0,2, 2, 1, 1, 0, 0, ...
+...
+}
+
 }
 
 \examples{
 }
-\keyword{ fGWAS }
-\keyword{ Loading }
+\keyword{ Data }

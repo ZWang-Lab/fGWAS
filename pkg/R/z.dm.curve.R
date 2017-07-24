@@ -17,7 +17,7 @@ setClass("fg.curve.base",
 setMethod("show", signature(object="fg.curve.base"), function(object){
    cat("     Class :", class(object), "\n");
    cat("Curve Type :", object@type, "\n");
-   
+
    info <- get_param_info(object, NULL );
    cat("Parameters :", info$names, "\n");
    cat("   Formula :", info$formula, "\n");
@@ -65,7 +65,7 @@ fg.allCurves<-function()
 	list.curve[[cn<-cn+1]] <- new("fg.curve.legendre2",  type = "Legendre2",  description = "Legendre Polynomial(2nd-order)");
 	list.curve[[cn<-cn+1]] <- new("fg.curve.legendre3",  type = "Legendre3",  description = "Legendre Polynomial(3rd-order)");
 	list.curve[[cn<-cn+1]] <- new("fg.curve.legendre4",  type = "Legendre4",  description = "Legendre Polynomial(4th-order)");
-	
+
 	#list.curve[[cn<-cn+1]] <- new("fg.curve.ChapmanRichard",  type = "ChapmanRichard",  description = "Chapman-Richard");
 
 	return(list.curve);
@@ -84,9 +84,18 @@ fg.addCurve<-function()
 ##-----------------------------------------------------------
 log_get_cueve <- function(object, par, times, options=list())
 {
-	y <- par[1]/(1+par[2]*exp(-1 * par[3]*times) )
+	y <- par[1]/(1+par[2]*exp(-1 * par[3]*times) );
 
 	return(y);
+}
+
+log_get_gradient <- function(object, par, times, options=list())
+{
+	d.a <- 1/(1+par[2]*exp(-1 * par[3]*times) );
+	d.b <- (-1)* par[1] / ( (1+par[2]*exp(-1 * par[3]*times) )^2 ) * exp(-1 * par[3]*times);
+	d.r <- (-1)* par[1] / ( (1+par[2]*exp(-1 * par[3]*times) )^2 ) * par[2] * exp(-1 * par[3]*times) * (-1*times);
+
+	return(list(d.a, d.b, d.r));
 }
 
 log_get_param_info<-function(object, times, options=list())
@@ -114,7 +123,7 @@ log_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.log
 ##-----------------------------------------------------------
 
@@ -124,6 +133,8 @@ setClass("fg.curve.log",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.log" ), log_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.log" ), log_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.log" ), log_get_param_info )
 
@@ -136,7 +147,7 @@ setMethod("est_init_param", signature( object = "fg.curve.log"), log_est_init_pa
 
 ##-----------------------------------------------------------
 ## Double Logistic
-## 
+##
 ##    y = a1/(1+b1*exp(-r1*t)) +  a2/(1+b2*exp(-r2*t))
 ##
 ##-----------------------------------------------------------
@@ -153,9 +164,23 @@ log2_get_cueve <- function(object, par, times, options=list())
 	return(y);
 }
 
+log2_get_gradient <- function(object, par, times, options=list())
+{
+	d.a1 <- 1/(1+par[2]*exp(-1 * par[3]*times) );
+	d.b1 <- (-1)* par[1] / ( (1+par[2]*exp(-1 * par[3]*times) )^2 ) * exp(-1 * par[3]*times);
+	d.r1 <- (-1)* par[1] / ( (1+par[2]*exp(-1 * par[3]*times) )^2 ) * par[2] * exp(-1 * par[3]*times) * (-1*times);
+
+	d.a2 <- 1/(1+par[5]*exp(-1 * par[6]*times) );
+	d.b2 <- (-1)* par[4] / ( (1+par[5]*exp(-1 * par[6]*times) )^2 ) * exp(-1 * par[6]*times);
+	d.r2 <- (-1)* par[4] / ( (1+par[5]*exp(-1 * par[6]*times) )^2 ) * par[5] * exp(-1 * par[6]*times) * (-1*times);
+
+	return(list(d.a1, d.b1, d.r1, d.a2, d.b2, d.r2));
+}
+
+
 log2_get_param_info<-function(object, times, options=list())
 {
-	return(list(count=6, 
+	return(list(count=6,
 	        names=c("a1", "b1", "r1","a2", "b2", "r2"),
 	        formula="y = a1/(1+b1*exp(-r1*t)) +  a2/(1+b2*exp(-r2*t))" ));
 }
@@ -180,7 +205,7 @@ log2_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.log2
 ##-----------------------------------------------------------
 
@@ -190,6 +215,8 @@ setClass("fg.curve.log2",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.log2" ), log2_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.log2" ), log2_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.log2" ), log2_get_param_info )
 
@@ -219,6 +246,17 @@ abrk_get_cueve <- function(object, par, times, options=list())
 	return(y);
 }
 
+abrk_get_gradient <- function(object, par, times, options=list())
+{
+	d.a <- ( 1 + par[2]*exp(-par[3]*times) )^(1/(1-par[4]) );
+	d.b <- par[1] * (1/(1-par[4])) * ( 1 + par[2]*exp(-par[3]*times) )^( 1/(1-par[4]) -1 ) * exp( -par[3]*times );
+	d.r <- par[1] * (1/(1-par[4])) * ( 1 + par[2]*exp(-par[3]*times) )^( 1/(1-par[4]) -1 ) * par[2]*exp(-par[3]*times) * (-1*times);
+	d.k <- par[1] * (1 + par[2]*exp(-par[3]*times))^( 1/(1-par[4])) * log((1 + par[2]*exp(-par[3]*times))) * (1-par[4])^(-2);
+
+	return(list(d.a, d.b, d.r, d.k));
+}
+
+
 abrk_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=4, names=c("a","b","r","k"),
@@ -244,7 +282,7 @@ abrk_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.abrk
 ##-----------------------------------------------------------
 
@@ -254,6 +292,8 @@ setClass("fg.curve.abrk",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.abrk" ), abrk_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.abrk" ), abrk_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.abrk" ), abrk_get_param_info )
 
@@ -281,6 +321,15 @@ pc_get_cueve <- function(object, par, times, options=list())
 	return(  par[1] + par[3]*times/(par[2] + times) );
 }
 
+pc_get_gradient <- function(object, par, times, options=list())
+{
+	d.E0 <-  times/times;
+	d.E50 <-  (-1) * par[3]*times/(par[2] + times)^2 ;
+	d.Emax <-  times/(par[2] + times) ;
+
+	return(list(d.E0, d.E50, d.Emax));
+}
+
 pc_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=3, names=c("E0", "E50", "Emax"),
@@ -303,7 +352,7 @@ pc_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.pharmacology
 ##-----------------------------------------------------------
 
@@ -313,6 +362,8 @@ setClass("fg.curve.pharmacology",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.pharmacology" ), pc_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.pharmacology" ), pc_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.pharmacology" ), pc_get_param_info )
 
@@ -339,6 +390,14 @@ exp_get_cueve <- function(object, par, times, options=list())
 	return(  par[[1]]*exp( par[[2]]*times ) );
 }
 
+exp_get_gradient <- function(object, par, times, options=list())
+{
+	d.a <- exp( par[[2]]*times );
+	d.r <- par[[1]] * exp( par[[2]]*times ) * times;
+
+	return(list(d.a, d.r));
+}
+
 exp_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=2, names=c("a", "r"), formula="y = a*exp(r*t)"));
@@ -356,14 +415,14 @@ exp_get_simu_param<-function(object, times, options=list())
 
 exp_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	r <-  mean( (log( pheY[, 2]) - log(pheY[, 1]) )/(pheT[,2]-pheT[,1]), na.rm=T)
+	suppressWarnings( r <-  mean( (log( pheY[, 2]) - log(pheY[, 1]) )/(pheT[,2]-pheT[,1]), na.rm=T) )
 	w0 <- mean( pheY[, 1]/exp(r*pheT[,1]), na.rm=T);
-	
+
 	return(c(w0,r ));
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.exponential
 ##-----------------------------------------------------------
 
@@ -373,6 +432,8 @@ setClass("fg.curve.exponential",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.exponential" ), exp_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.exponential" ), exp_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.exponential" ), exp_get_param_info )
 
@@ -401,9 +462,20 @@ biexp_get_cueve <- function(object, par, times, options=list())
 	return(  par[1]*exp(-par[2]*times) + par[3]*exp(-par[4]*times) );
 }
 
+biexp_get_gradient <- function(object, par, times, options=list())
+{
+	d.a1 <- exp(-par[2]*times);
+	d.r1 <- par[1]*exp(-par[2]*times) *(-times) ;
+	d.a2 <- exp(-par[4]*times) ;
+	d.r2 <- par[3]*exp(-par[4]*times) *(-times) ;
+
+	return(list(d.a1, d.r1, d.a2, d.r2));
+}
+
+
 biexp_get_param_info<-function(object, times, options=list())
 {
-	return(list(count=4, names=c("a1", "r1", "a2", "r2"), 
+	return(list(count=4, names=c("a1", "r1", "a2", "r2"),
 	          formula="y = a1*exp(-r1*t) + a2*exp(-r2*t)"));
 }
 
@@ -419,14 +491,14 @@ biexp_get_simu_param<-function(object, times, options=list())
 
 biexp_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	r <-  -1* mean((log( pheY[, 2]) - log(pheY[, 1]))/(pheT[,2]-pheT[,1]), na.rm=T)
+	suppressWarnings( r <-  -1* mean( (log( pheY[, 2]) - log(pheY[, 1]))/(pheT[,2]-pheT[,1]), na.rm=T) )
 	a_double <- mean(pheY[, 1]/exp(-1*r*pheT[,1]), na.rm=T);
 
 	return(c(a_double/2, r, a_double/2, r))
 }
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.bi.exponential
 ##-----------------------------------------------------------
 
@@ -436,6 +508,8 @@ setClass("fg.curve.bi.exponential",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.bi.exponential" ), biexp_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.bi.exponential" ), biexp_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.bi.exponential" ), biexp_get_param_info )
 
@@ -460,8 +534,14 @@ power_show <- function(object)
 
 power_get_cueve <- function(object, par, times, options=list())
 {
-	return(  par[1]*( times^par[2]) );
+	return( par[1]*( times^par[2]) );
 }
+
+power_get_gradient <- function(object, par, times, options=list())
+{
+	return( list( times^par[2] , par[1]*( times^par[2])*log(times) )  );
+}
+
 
 power_get_param_info<-function(object, times, options=list())
 {
@@ -480,14 +560,14 @@ power_get_simu_param<-function(object, times, options=list())
 
 power_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	b <- mean( log(pheY[, NCOL(pheY)])-log(pheY[, 1]) / log(pheT[, NCOL(pheT)])-log(pheT[, 1]), na.rm=T);
-	a <- exp( mean( log(pheY[, NCOL(pheY)]) - b*log(pheT[, NCOL(pheY)]), na.rm=T ))
+	suppressWarnings ( b <- mean( (log(pheY[, NCOL(pheY)])-log(pheY[, 1])) / (log(pheT[, NCOL(pheT)])-log(pheT[, 1])), na.rm=T) );
+	suppressWarnings ( a <- exp( mean( log(pheY[, NCOL(pheY)]) - b*log(pheT[, NCOL(pheY)]), na.rm=T )) );
 	return(c(a, b));
 }
 
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.power
 ##-----------------------------------------------------------
 
@@ -497,6 +577,8 @@ setClass("fg.curve.power",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.power" ), power_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.power" ), power_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.power" ), power_get_param_info )
 
@@ -524,6 +606,13 @@ Legendre2_get_cueve <- function(object, par, times, options=list())
 	return( par[1] + ti*par[2] + 0.5*(3*ti*ti-1)* par[3]  );
 }
 
+Legendre2_get_gradient <- function(object, par, times, options=list())
+{
+	ti <- -1 + 2*(times - options$min.time)/( options$max.time - options$min.time );
+	return( list( array(1, dim=dim(ti)), ti, 0.5*(3*ti*ti-1) )  );
+}
+
+
 Legendre2_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=3, names=c("u0","u1","u2"), formula="y = u0 + u1*t + u2*1/2*(3*t^2-1)"));
@@ -549,17 +638,17 @@ Legendre2_est_init_param<-function(object, pheY, pheX, pheT, options=list())
     y1 <- pheY[,1];
     y2 <- pheY[,2];
     y3 <- pheY[,3];
-    
+
 	u2 <- mean( ( (y1-y2)/(ti[,1]-ti[,2]) - (y1-y3)/(ti[,1]-ti[,3]) ) / ( (ti[,1]+ti[,2])-(ti[,1]+ti[,3]) ) / 1.5, na.rm = T);
 	u1 <- mean( (y1-y2) /(ti[,1]-ti[,2]) - u2 * 1.5 * (ti[,1]+ti[,2]), na.rm=T);
 	u0 <- mean( y3 + u2*0.5 - u1*ti[,3] - u2 * 1.5 * ti[,3]^2, na.rm=T);
-	
+
 	return(c(u0, u1, u2));
 }
 
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.legendre2
 ##-----------------------------------------------------------
 
@@ -569,6 +658,8 @@ setClass("fg.curve.legendre2",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.legendre2" ), Legendre2_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.legendre2" ), Legendre2_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.legendre2" ), Legendre2_get_param_info )
 
@@ -597,6 +688,13 @@ Legendre3_get_cueve <- function(object, par, times, options=list())
 	return( par[1] + ti*par[2] + 0.5*(3*ti*ti-1)* par[3] +  0.5*(5*ti^3-3*ti)*par[4] );
 }
 
+Legendre3_get_gradient <- function(object, par, times, options=list())
+{
+	ti <- -1 + 2*(times-options$min.time)/( options$max.time - options$min.time );
+	return( list( array(1, dim=dim(ti)), ti, 0.5*(3*ti*ti-1), 0.5*(5*ti^3-3*ti) ) );
+}
+
+
 Legendre3_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=4, names=c("u0","u1","u2","u3"), formula="y = u0 + u1*t + u2*1/2*(3*t^2-1) + u3*1/2*(5t^3-3t) "));
@@ -624,7 +722,7 @@ Legendre3_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.legendre3
 ##-----------------------------------------------------------
 
@@ -634,6 +732,8 @@ setClass("fg.curve.legendre3",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.legendre3" ), Legendre3_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.legendre3" ), Legendre3_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.legendre3" ), Legendre3_get_param_info )
 
@@ -662,6 +762,13 @@ Legendre4_get_cueve <- function(object, par, times, options=list())
 	return( par[1] + ti*par[2] + 0.5*(3*ti*ti-1)* par[3] +  0.5*(5*ti^3-3*ti)*par[4] +  0.125*(35*ti^4-30*ti^2+3)* par[5] );
 }
 
+Legendre4_get_gradient <- function(object, par, times, options=list())
+{
+	ti <- -1 + 2*(times-options$min.time)/( options$max.time - options$min.time );
+	return( list( array(1, dim=dim(ti)), ti, 0.5*(3*ti*ti-1), 0.5*(5*ti^3-3*ti),  0.125*(35*ti^4-30*ti^2+3) )  );
+}
+
+
 Legendre4_get_param_info<-function(object, times, options=list())
 {
 	return(list(count=5, names=c("u0","u1","u2","u3", "u4"), formula="y = u0 + u1*t + u2*1/2*(3*t^2-1) + u3*1/2*(5t^3-3t) + u4*1/8*(35*ti^4-30*ti^2+3)"));
@@ -689,7 +796,7 @@ Legendre4_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 
 
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.legendre4
 ##-----------------------------------------------------------
 
@@ -699,6 +806,8 @@ setClass("fg.curve.legendre4",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.legendre4" ), Legendre4_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.legendre4" ), Legendre4_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.legendre4" ), Legendre4_get_param_info )
 
@@ -711,7 +820,7 @@ setMethod("est_init_param", signature( object = "fg.curve.legendre4"), Legendre4
 
 ##-----------------------------------------------------------
 ## Chapman-Richard
-## 
+##
 ##    y = a*(1-exp(-rt))^b
 ##
 ##-----------------------------------------------------------
@@ -724,6 +833,16 @@ cr_get_cueve <- function(object, par, times, options=list())
 {
 	return ( par[1]*(1 - exp(-par[3]*times))^par[2] );
 }
+
+cr_get_gradient <- function(object, par, times, options=list())
+{
+	d.a <- (1 - exp(-par[3]*times))^par[2] ;
+	d.b <- par[1] * (1 - exp(-par[3]*times))^par[2] * log( 1 - exp(-par[3]*times) );
+	d.r <- par[1] * (1 - exp(-par[3]*times))^(par[2]-1) * par[2]* exp(-par[3]*times) *(-1*times);
+
+	return ( list(d.a, d.b, d.r) );
+}
+
 
 cr_get_param_info<-function(object, times, options=list())
 {
@@ -746,14 +865,13 @@ cr_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 	b <- 1
 	r <- mean( log(1-pheY/a)/pheT/(-1), trim=0.2, na.rm=T)
 	if( is.infinite(r)) r<-0;
-	
+
 	return(c(a, b, r));
 }
 
 
-
 ##-----------------------------------------------------------
-## S4 class: 
+## S4 class:
 ##           fg.curve.ChapmanRichard
 ##-----------------------------------------------------------
 
@@ -763,6 +881,8 @@ setClass("fg.curve.ChapmanRichard",
 )
 
 setMethod("get_curve",  signature( object = "fg.curve.ChapmanRichard" ), cr_get_cueve )
+
+setMethod("get_gradient",  signature( object = "fg.curve.ChapmanRichard" ), cr_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.curve.ChapmanRichard" ), cr_get_param_info )
 

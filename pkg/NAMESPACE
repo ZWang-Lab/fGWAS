@@ -1,8 +1,14 @@
+import(parallel);
+import(methods);
+import(stats);
+import(graphics);
+import(grDevices);
+import(utils);
 import(mvtnorm);
 import(snpStats);
+import(minpack.lm);
 import(nlme);
 import(lme4);
-import(parallel);
 
 export(cur)
 export(fg.simulate)
@@ -11,6 +17,7 @@ export(fg.load.simple)
 export(fg.load.phenotype)
 export(fg.snpscan)
 export(fg.select.sigsnp)
+export(fg.data.estimate)
 export(plot.fgwas.curve)
 export(profile.fgwas.curve)
 
@@ -21,6 +28,7 @@ S3method(summary, fgwas.phe.obj)
 S3method(print, fgwas.scan.obj)
 S3method(summary, fgwas.scan.obj)
 S3method(plot, fgwas.scan.obj)
+S3method(plot, fgwas.phe.obj)
 
 exportClasses("fg.dm.genodata")
 exportClasses("fg.dm.plink")

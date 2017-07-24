@@ -1,6 +1,6 @@
 create.simple.obj  <- function( file.simple.snp, options )
 {
-	if ( missing( file.simple.snp ) )
+	if (missing( file.simple.snp ) )
 		stop("! file.simple.snp  must be assigned with the valid values.");
 
 	fg.dm.simple <- getRefClass("fg.dm.simple");
@@ -144,7 +144,7 @@ load_simple_snp<-function( objref )
 fg_load_simple<-function( file.simple.snp, options )
 {
 	cat( "[ Loading Simple ] \n");
-	cat( "Checking the parameters ......\n");
+	cat( " Checking the parameters ......\n");
 
 	if ( missing(file.simple.snp) )
 		stop("! file.simple.snp must be assigned with the valid file name..");

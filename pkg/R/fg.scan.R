@@ -18,7 +18,7 @@ check_ids<-function( obj.gen, obj.phe )
 	{
 		cat("!", length(which(is.na(m.snp))), "IDs, can not be found in the phenotype file.\n" );
 		cat("! First 5 IDs:\n");
-		show( head(phe.fam[is.na(m.snp), ], n=5 ) );
+		show( head(ids.phe[is.na(m.snp), ], n=5 ) );
 	}
 
 	ids.com <- intersect( ids.phe, ids.gen);
@@ -27,9 +27,13 @@ check_ids<-function( obj.gen, obj.phe )
 
 fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.type=NULL, snp.sub = NULL, permutation=NULL, options=list())
 {
-	stopifnot( class(obj.gen)=="fgwas.gen.obj" && class(obj.phe)=="fgwas.phe.obj")
+	if( class(obj.gen)!="fgwas.gen.obj" )
+		stop("The first paramater should be genotype object.");
 
-	default_options <- list( intercept=F, max.loop=5, order=3, ncores=1, verbose=TRUE);
+	if( class(obj.phe)!="fgwas.phe.obj" )
+		stop("The second paramater should be phenotype object.");
+
+	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, order=3, ncores=1, verbose=FALSE, use.gradient=T);
 	default_options[names(options)] <- options;
 	options <- default_options;
 	options$opt.method <- toupper(method);
@@ -62,15 +66,15 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	}
 
 	if (length(snp.sub)==0)
-		stop("No SNPs found in the genotype file.");
+		stop("No SNPs are found in the genotype file.");
 
+	r.time <- NULL;
 	if( toupper(method )=="GLS")
 	{
 		r.time <- system.time( r <- snpscan_nocurve( obj.gen, obj.phe, snp.sub, options ) );
 		if (r$error)
 			stop(r$err.info);
-		r$system.time <- r.time;
-		ret$ret.gls <- r;
+
 		ret$ret.gls <- r;
 	}
 
@@ -80,42 +84,40 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 		if (r$error)
 			stop(r$err.info);
 
-		r$system.time <- r.time;
 		ret$ret.mixed <- r;
+	}
+
+	if( toupper(method )=="FAST" || toupper(method )=="FAST-NORM" || toupper(method )=="FGWAS" || toupper(method )=="OPTIM-FGWAS")
+	{
+		if(is.null(obj.phe$est.curve))
+			obj.phe <- fg_dat_est( obj.phe,
+					curve.type = ifelse( is.null(obj.phe$obj.curve), "auto", obj.phe$obj.curve@type),
+					covariance.type = ifelse( is.null(obj.phe$obj.curve), "auto", obj.phe$obj.covar@type), options );
+		obj.phe$h0 <- proc_est_h0( obj.phe, options );
 	}
 
 	if( toupper(method )=="FAST" || toupper(method )=="FAST-NORM")
 	{
-		if(is.null(obj.phe$est.curve))
-			obj.phe <- fg_dat_est( obj.phe, options );
-		obj.phe$h0 <- proc_est_h0( obj.phe, options );
-
 		r.time <- system.time( r <- snpsnp_curve( obj.gen, obj.phe, snp.sub, options ) );
 		if (r$error)
 			stop(r$err.info);
 
-		r$system.time <- r.time;
 		ret$ret.fast <- r;
 	}
 
 	if( toupper(method )=="FGWAS" || toupper(method )=="OPTIM-FGWAS")
 	{
-		if(is.null(obj.phe$est.curve))
-			obj.phe <- fg_dat_est( obj.phe, options );
-		obj.phe$h0 <- proc_est_h0( obj.phe, options );
-
 		#r.cluster <- snp_cluster(obj.gen, snp.sub, dist=20 );
 		r.time <- system.time( r <- snpsnp_curve( obj.gen, obj.phe, snp.sub, options ) );
 		if (r$error)
 			stop(r$err.info);
 
-		r$system.time <- r.time;
 		ret$ret.fgwas <- r;
 	}
 
-
 	ret$obj.gen <- obj.gen;
 	ret$obj.phe <- obj.phe;
+	ret$system.time <- r.time;
 
 	class(ret) <- "fgwas.scan.obj";
 
@@ -131,7 +133,7 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 	snp.sect0 <- seq( 1, snp.len, 1000 );
 	snp.sect1 <- c( snp.sect0[-1]-1, snp.len );
 
-	intercept <- ifelse(is.null(obj.phe$params$intercept), FALSE, obj.phe$params$intercept );
+	intercept <- ifelse(is.null(obj.phe$intercept), FALSE, obj.phe$intercept );
 	r.list <- list();
 
 	for(i in 1:length(snp.sect0))
@@ -141,11 +143,17 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 			## dont use requireNamespace method which doesnt call .onAttach() hook.
 			##requireNamespace("fGWAS");
 			require(fGWAS);
-			r.mle<- try( proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options ), FALSE );
+			#r.mle<- try( proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options ), FALSE );
+
+#cat("SNP.k=", k, "\n");
+			##!! Tempraory
+			r.mle<- proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options );
+
 			return( r.mle );
 		}
 
-		if(options$verbose)	cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
+		if(options$verbose)
+			cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
 
 		snp.idx.sub <- snp.idx[ snp.sect0[i]:snp.sect1[i] ];
 		snp.mat  <- obj.gen$reader$get_snpmat( snp.idx.sub);
@@ -221,6 +229,9 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 	re.names[idx.start:(idx.start+par.curve.len-1)] <- paste("h1.G2", curve.par.names, sep=".")
 	idx.start <- idx.start+par.curve.len
 	re.names[idx.start:(idx.start+par.covar.len-1)] <- paste("h1X", covar.par.names, sep=".")
+
+	re.names[idx.start+par.covar.len] <- "h0.R2"
+	re.names[idx.start+par.covar.len+1] <- "h1.R2"
 
 	colnames(r.fgwas ) <- re.names;
 	rownames(r.fgwas ) <- r.fgwas$NAME;

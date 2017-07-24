@@ -87,12 +87,13 @@ setRefClass("fg.dm.plink",
     methods = list(
 		show = function()
 		{
+			if (chromosome!=-1) 
+				cat("  Chromosome: ", chromosome, "\n")
+			else	
+				cat("  Chromosome: ", "all", "\n")
+
 			callSuper();
 			cat("  Plink Command: ",    plink.command, "\n");
-			if (chromosome!=-1) 
-				cat("  chromosome: ", chromosome, "\n")
-			else	
-				cat("  chromosome: ", "all", "\n")
 	    },
 
 		shrink = function()

@@ -19,54 +19,6 @@
 ##################################################################
 
 #--------------------------------------------------------------
-# fpt.plot_to_doc
-#   5 file formats are supported.
-#
-#   1) PDF
-#   2) PS
-#   3) WMF
-#   4) JPG
-#   5) PNG (default)
-#--------------------------------------------------------------
-fpt.plot_to_doc<-function( filename, doctype, h=800, w=800)
-{
-	strFile <- "";
-
-	if (doctype=="pdf")
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "pdf", sep=".");
-		pdf( strFile );
-	}
-	else if (doctype=="jpg")
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "jpg", sep=".");
-		jpeg( strFile );
-	}
-	else if (doctype=="wmf")
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "wmf", sep=".");
-		win.metafile( strFile );
-	}
-	else if (doctype=="ps")
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "ps", sep=".");
-		postscript( strFile );
-	}
-	else if (doctype=="png")
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "png", sep=".");
-		png( strFile, width=300*9, height=300*9, res=300 );
-	}
-	else
-	{
-		strFile <- paste(filename, FM_sys$seq_id(), "png", sep=".");
-		png( strFile, h=h, w=w);
-	}
-	return (strFile);
-}
-
-
-#--------------------------------------------------------------
 # ftp.plot_tiled_curves
 #
 # Draw the growth curve of the individuals in some tiled plots,
@@ -525,7 +477,7 @@ fpt.plot_correlation<-function( dat, sTitle, labels=NULL, log10=TRUE, significan
 	minv <- 0;
 
 	ramp <- colorRamp(c( "green", "blue" ));
-	cols <- rgb ( ramp(seq(0, 1, length = 1000) ), max=255 );
+	cols <- rgb ( ramp(seq(0, 1, length = 1000) ), maxColorValue=255 );
 	mc <- array("#FFFFFF", dim = c( nLenArm, nLenArm));
 	cls <- round( (rm-minv)/(maxv-minv)*1000 ) +1;
 	cls[which(cls>1000)]<-1000;
@@ -644,7 +596,7 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 	y.max <- round(max(-log10(res[,3]), na.rm=T))+1;
 
 	#ylab=expression(-log[10](italic(p))),
-	plot( 1,1, type="n", xlab="SNP", ylab="LR2",  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ) );
+	plot( 1,1, type="n", xlab="SNP", ylab="-log10(pvalue)",  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ) );
 
 	if(!is.na(p.05))
 	{
@@ -664,7 +616,7 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 	par(op);
 }
 
-fpt.plot_curve <- function( obj.phe, par_h0, par_h1, snp.vec, extra=list())
+fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, extra=list())
 {
 	xlines<-function(x, y, col="black", lwd=1.0, lty="solid")
 	{
@@ -711,7 +663,11 @@ fpt.plot_curve <- function( obj.phe, par_h0, par_h1, snp.vec, extra=list())
 
 	get_est_vector<-function( pheY0, pheX0, pheT0, par_X, par_curve, ti)
 	{
-		X.cov <- matrix( pheX0 %*% par_X, ncol=1, byrow=T) %*% matrix(rep(1,NROW(ti)), nrow=1, byrow=T)
+		if( !is.null(par_X) && length(par_X)>0 && !is.null(pheX0) ) 
+			X.cov <- matrix( pheX0 %*% par_X, ncol=1, byrow=T) %*% matrix(rep(1,NROW(ti)), nrow=1, byrow=T)
+		else	
+			X.cov <- matrix(rep(0,NROW(ti)), nrow=1, byrow=T);
+			
 		y.est <- get_curve( obj.phe$obj.curve, par_curve, ti, options=options )  + colMeans( X.cov, na.rm=T);
 
 		return(list(time=ti, value=y.est))
@@ -721,67 +677,85 @@ fpt.plot_curve <- function( obj.phe, par_h0, par_h1, snp.vec, extra=list())
 	pheX <- obj.phe$pheX;
 	pheT <- obj.phe$pheT;
     options <- list(min.time=min(pheT, na.rm=T), max.time=max(pheT, na.rm=T));
+	h0.mean <- h0.est <- h1A.mean <- h1A.est <- h1B.mean<- h1B.est <- h1C.mean<- h1C.est <- NULL
 
-	par_x_num <- ifelse( is.null( pheX ), 1 , 1+NCOL( pheX ) );
-	if (is.null(pheX)) pheX <- matrix(1, nrow=NROW(pheY), ncol=1 ) else pheX <- cbind(1, pheX);
+	if( obj.phe$intercept )
+		if (is.null(pheX)) 
+			pheX <- matrix(1, nrow=NROW(pheY), ncol=1 ) 
+		else 
+			pheX <- cbind(1, pheX);
+
+	par_x_num <- ifelse( is.null( pheX ), 0 , NCOL( pheX ) )
 	par_curve_num <- get_param_info(obj.phe$obj.curve, pheT )$count;
 
 	ti <- seq( min( pheT, na.rm=T ), max( pheT, na.rm=T ), length=100 )
-	h0.mean<- get_mean_vector( pheY, pheT ) ;
-	h0.est <- get_est_vector( pheY, pheX, pheT, par_h0[1:par_x_num], par_h0[(par_x_num+1):(par_x_num+par_curve_num)], ti);
-
-	snp0.idx <- which(snp.vec==0);
-	snp1.idx <- which(snp.vec==1);
-	snp2.idx <- which(snp.vec==2);
-
-	h1A.mean<- NULL;
-	h1A.est <- NULL;
-	if(length(snp0.idx)>0)
+	if(!is.null(par_h0))
 	{
-		h1A.mean<- get_mean_vector( pheY[snp0.idx,,drop=F], pheT[snp0.idx,,drop=F] ) ;
-		h1A.est <- get_est_vector( pheY[snp0.idx,,drop=F], pheX[snp0.idx,,drop=F], pheT[snp0.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1):(par_x_num+par_curve_num)], ti);
+		h0.mean<- get_mean_vector( pheY, pheT ) ;
+		h0.est <- get_est_vector( pheY, pheX, pheT, if(is.null(pheX)) NULL else par_h0[1:par_x_num], par_h0[(par_x_num+1):(par_x_num+par_curve_num)], ti);
 	}
-
-	h1B.mean<- NULL;
-	h1B.est <- NULL
-	if(length(snp1.idx)>0)
+	
+	snp0.idx <- snp1.idx <- snp2.idx <- NULL;
+	if(!is.null(snp.vec))
 	{
-		h1B.mean<- get_mean_vector( pheY[snp1.idx,,drop=F], pheT[snp1.idx,,drop=F] ) ;
-		h1B.est <- get_est_vector( pheY[snp1.idx,,drop=F], pheX[snp1.idx,,drop=F], pheT[snp1.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1+par_curve_num):(par_x_num+par_curve_num*2)], ti);
+		snp0.idx <- which(snp.vec==0);
+		snp1.idx <- which(snp.vec==1);
+		snp2.idx <- which(snp.vec==2);
 	}
-
-	h1C.mean<- NULL;
-	h1C.est <- NULL
-	if(length(snp2.idx)>0)
+	
+	if(!is.null(par_h1))
 	{
-		h1C.mean<- get_mean_vector( pheY[snp2.idx,,drop=F], pheT[snp2.idx,,drop=F] ) ;
-		h1C.est <- get_est_vector( pheY[snp2.idx,,drop=F], pheX[snp2.idx,,drop=F], pheT[snp2.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1+par_curve_num*2):(par_x_num+par_curve_num*3)], ti);
-	}
+		if(length(snp0.idx)>0)
+		{
+			h1A.mean<- get_mean_vector( pheY[snp0.idx,,drop=F], pheT[snp0.idx,,drop=F] ) ;
+			h1A.est <- get_est_vector( pheY[snp0.idx,,drop=F], if(!is.null(pheX)) pheX[snp0.idx,,drop=F] else NULL, pheT[snp0.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1):(par_x_num+par_curve_num)], ti);
+		}
 
+		if(length(snp1.idx)>0)
+		{
+			h1B.mean<- get_mean_vector( pheY[snp1.idx,,drop=F], pheT[snp1.idx,,drop=F] ) ;
+			h1B.est <- get_est_vector( pheY[snp1.idx,,drop=F], if(!is.null(pheX)) pheX[snp1.idx,,drop=F] else NULL, pheT[snp1.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1+par_curve_num):(par_x_num+par_curve_num*2)], ti);
+		}
+
+		if(length(snp2.idx)>0)
+		{
+			h1C.mean<- get_mean_vector( pheY[snp2.idx,,drop=F], pheT[snp2.idx,,drop=F] ) ;
+			h1C.est <- get_est_vector( pheY[snp2.idx,,drop=F], if(!is.null(pheX)) pheX[snp2.idx,,drop=F] else NULL, pheT[snp2.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1+par_curve_num*2):(par_x_num+par_curve_num*3)], ti);
+		}
+	}
+	
 	gen.col <- c("pink", "khaki", "skyblue")
 	plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)),  xlab="Time", ylab="Phenotype", cex=0.75);
-	for(i in 1:NROW(pheY))
-		lines(pheT[i,], pheY[i,], col=gen.col[snp.vec[i]+1], lwd=0.2);
+		for(i in 1:NROW(pheY))
+			lines(pheT[i,], pheY[i,], col=ifelse( is.null(snp.vec), "gray", gen.col[snp.vec[i]+1]), lwd=0.2);
+	
+	if(!is.null(par_h0))
+	{
+		xlines(h0.mean$time, h0.mean$value, col="black", lwd=1, lty=11)
+		xlines(h0.est$time,  h0.est$value,  col="black", lwd=0.5)
+		points(h0.mean$time,  h0.mean$value,  col="black", pch=21, cex=h0.mean$count/NROW(pheY)*1.5);
+	}
+	
+	if(!is.null(par_h1))
+	{
+		if (length(snp0.idx)>0) xlines(h1A.mean$time, h1A.mean$value, col="red", lwd=0.8, lty=11)
+		if (length(snp0.idx)>0) xlines(h1A.est$time, h1A.est$value, col="red", lwd=0.8)
 
-	xlines(h0.mean$time, h0.mean$value, col="black", lwd=1, lty=11)
-	xlines(h0.est$time,  h0.est$value,  col="black", lwd=0.5)
-	points(h0.mean$time,  h0.mean$value,  col="black", pch=21, cex=h0.mean$count/NROW(pheY)*1.5);
+		if (length(snp1.idx)>0) xlines(h1B.mean$time, h1B.mean$value, col="darkgreen", lwd=0.8, lty=11)
+		if (length(snp1.idx)>0) xlines(h1B.est$time, h1B.est$value, col="darkgreen", lwd=0.8)
 
-	if (length(snp0.idx)>0) xlines(h1A.mean$time, h1A.mean$value, col="red", lwd=0.8, lty=11)
-	if (length(snp0.idx)>0) xlines(h1A.est$time, h1A.est$value, col="red", lwd=0.8)
-
-	if (length(snp1.idx)>0) xlines(h1B.mean$time, h1B.mean$value, col="darkgreen", lwd=0.8, lty=11)
-	if (length(snp1.idx)>0) xlines(h1B.est$time, h1B.est$value, col="darkgreen", lwd=0.8)
-
-	if (length(snp2.idx)>0) xlines(h1C.mean$time, h1C.mean$value, col="blue", lwd=1, lty=11)
-	if (length(snp2.idx)>0) xlines(h1C.est$time, h1C.est$value, col="blue", lwd=0.8)
-
-	legend("topleft", legend=c(length(snp0.idx), length(snp1.idx), length(snp2.idx)),
-			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  );
-
-	title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
-
-	text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
-
+		if (length(snp2.idx)>0) xlines(h1C.mean$time, h1C.mean$value, col="blue", lwd=1, lty=11)
+		if (length(snp2.idx)>0) xlines(h1C.est$time, h1C.est$value, col="blue", lwd=0.8)
+	}
+	
+	if(!is.null(snp.vec))
+	{
+		legend("topleft", legend=c(length(snp0.idx), length(snp1.idx), length(snp2.idx)),
+			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
+		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
+	
+		text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
+	}
+	
 	return
 }

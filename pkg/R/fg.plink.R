@@ -483,7 +483,7 @@ convert_simpe_to_plink <- function( snp.info, snp.mat, snp.file.base )
 			allele.2 = rep("B",dim.snps[1]),
 			na.code=0);
 
-	cat("Genotype files have been converted into PLINK binary format(bed/bim/fam)\n");
+	cat(" Genotype files have been converted into PLINK binary format(bed/bim/fam)\n");
 
 	return(list(file.plink.bed = paste(snp.file.base, ".bed", sep=""),
    	    	file.plink.bim = paste(snp.file.base, ".bim", sep=""),

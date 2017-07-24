@@ -6,24 +6,26 @@ cur<-function()
 fg.simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, par0=NULL, par1=NULL, par2=NULL, par.covar=NULL, par.X=NULL,
 		sig.pos=NULL, phe.missing=0.03, snp.missing=0.03, plink.format=FALSE, file.prefix=NULL )
 {
+	if (is.null( fg.getCurve( curve.type ) ))
+		stop("No curve object specified by the parameter 'curve.type'. ")
+
+	if (is.null( fg.getCovariance( covariance.type ) ))
+		stop("No covariance object specified by the parameter 'covariance.type'. ")
+
 	obj <- fg_simulate( curve.type, covariance.type, n.obs, n.snp, time.points, par0, par1, par2, par.covar, par.X,
 		phe.missing, snp.missing, sig.pos, plink.format, file.prefix )
-
 	return( obj );
 }
 
-fg.load.cvf<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options=list())
-{
-	obj <- fg_load_cvf( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options );
-
-	return( obj );
-}
-
+#fg.load.cvf<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options=list())
+#{
+#	obj <- fg_load_cvf( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options );
+#	return( obj );
+#}
 
 fg.load.plink<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.command=NULL, chr=NULL, options=list())
 {
 	obj <- fg_load_plink( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chr, options );
-
 	## dont load plink data, just plink data object
 	return( obj );
 }
@@ -31,36 +33,34 @@ fg.load.plink<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.c
 fg.load.simple <- function( file.simple.snp, options=list())
 {
 	obj <- fg_load_simple( file.simple.snp, options )
-
 	return( obj );
 }
 
-fg.load.phenotype<-function( file.phe.long, file.phe.cov, file.phe.time, curve.type=NULL, covariance.type=NULL, file.plot.pdf=NULL, intercept=T, options=list())
+fg.load.phenotype<-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NULL, curve.type=NULL, covariance.type=NULL, file.plot.pdf=NULL, intercept=TRUE, options=list())
 {
 	obj <- fg_load_phenotype( file.phe.long, file.phe.cov, file.phe.time, curve.type, covariance.type, file.plot.pdf, intercept, options);
-
 	return( obj );
 }
 
-fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, permutation=NULL, snp.sub=NULL, options=list())
+fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, options=list() )
 {
-	if( ! toupper(method) %in% toupper(c("gls", "mixed", "fast", "fast-norm", "fgwas", "optim-fgwas")))
+	obj <- fg_dat_est( obj.phe, curve.type, covariance.type, file.plot.pdf, options );
+	return( obj );
+}
+
+fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, snp.sub=NULL, options=list())
+{
+	if( ! toupper(method) %in% toupper(c("gls", "mixed", "fast", "fgwas", "optim-fgwas")))
 		stop("the parameter 'method' has 5 optional values: 'gls', 'mixed', 'fast', 'fgwas', 'optim-fgwas'. ")
 
-	ret <- fg_snpscan ( fgwas.gen.obj, fgwas.phe.obj, method=method, curve.type=curve.type, covariance.type=covariance.type,permutation=permutation, snp.sub=snp.sub, options=options );
-	return( ret );
-}
+	if (!is.null(curve.type) && tolower(curve.type)!="auto" && is.null( fg.getCurve( curve.type ) ))
+		stop("No curve object specified by the parameter 'curve.type'. ")
 
-fg.permutation <-function( fgwas.scan.obj, permutation=NULL, options=list() )
-{
-	ret <- fg_permutation( fgwas.scan.obj, permutation, options );
-	return( ret );
-}
+	if (!is.null(covariance.type) && tolower(covariance.type)!="auto" && is.null( fg.getCovariance( covariance.type ) ))
+		stop("No covariance object specified by the parameter 'covariance.type'. ")
 
-fg.report <-function( fgwas.scan.obj, file.pdf, options=list() )
-{
-	ret <- fg_report( fgwas.scan.obj, file.pdf, options );
-	return(ret);
+	ret <- fg_snpscan ( fgwas.gen.obj, fgwas.phe.obj, method=method, curve.type=curve.type, covariance.type=covariance.type,permutation=NULL, snp.sub=snp.sub, options=options );
+	return( ret );
 }
 
 fg.select.sigsnp <- function( fgwas.scan.obj, sig.level=0.05, pv.adjust="bonferroni",  options=list() )
@@ -69,41 +69,41 @@ fg.select.sigsnp <- function( fgwas.scan.obj, sig.level=0.05, pv.adjust="bonferr
 	return(ret);
 }
 
-summary.fgwas.gen.obj <- function(object)
+summary.fgwas.gen.obj <- function(object, ...)
 {
 	stopifnot(class(object)=="fgwas.gen.obj");
 	summary_fgwas_gen_obj(object)
 }
 
 
-summary.fgwas.phe.obj <- function(object)
+summary.fgwas.phe.obj <- function(object, ...)
 {
 	stopifnot(class(object)=="fgwas.phe.obj");
-	summary_fgwas_phe_obj(obejct)
+	summary_fgwas_phe_obj(object)
 }
 
-summary.fgwas.scan.obj <- function(object)
+summary.fgwas.scan.obj <- function(object, ...)
 {
 	stopifnot(class(object)=="fgwas.scan.obj");
-	summary_fgwas_scan_obj(obejct)
+	summary_fgwas_scan_obj(object)
 }
 
-print.fgwas.gen.obj <- function(object, useS4 = FALSE)
+print.fgwas.gen.obj <- function(x, ..., useS4 = FALSE)
 {
-	stopifnot(class(object)=="fgwas.gen.obj");
-	print_fgwas_gen_obj(object);
+	stopifnot(class(x)=="fgwas.gen.obj");
+	print_fgwas_gen_obj(x  )
 }
 
-print.fgwas.phe.obj <- function(object,useS4 = FALSE)
+print.fgwas.phe.obj <- function(x,..., useS4 = FALSE)
 {
-	stopifnot(class(object)=="fgwas.phe.obj");
-	print_fgwas_phe_obj(object);
+	stopifnot(class(x)=="fgwas.phe.obj");
+	print_fgwas_phe_obj(x )
 }
 
-print.fgwas.scan.obj <- function(object,useS4 = FALSE)
+print.fgwas.scan.obj <- function(x, ..., useS4 = FALSE )
 {
-	stopifnot(class(object)=="fgwas.scan.obj");
-	print_fgwas_scan_obj(object);
+	stopifnot(class(x)=="fgwas.scan.obj");
+	print_fgwas_scan_obj(x )
 }
 
 plot.fgwas.scan.obj <- function(x, y, ..., file.pdf=NULL)
@@ -112,12 +112,11 @@ plot.fgwas.scan.obj <- function(x, y, ..., file.pdf=NULL)
 	plot_fgwas_scan_obj(x, y, file.pdf, ...)
 }
 
-plot.fgwas.phe.obj <- function(x, y, ..., file.pdf=NULL)
+plot.fgwas.phe.obj <- function(x, y, ..., curve.fitting=T, file.pdf=NULL)
 {
 	stopifnot(class(x)=="fgwas.phe.obj");
-	plot_fgwas_phe_obj(x, y, file.pdf, ...)
+	plot_fgwas_phe_obj(x, file.pdf, curve.fitting, ...)
 }
-
 
 plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL )
 {
@@ -129,6 +128,7 @@ plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL )
 	plot_fgwas_curve( object, snp.sub, file.pdf );
 }
 
+#Inner function, not public
 profile.fgwas.curve <- function( object, snp.sub )
 {
 	stopifnot(class(object)=="fgwas.scan.obj");

@@ -17,7 +17,7 @@ setClass("fg.covariance.base",
 setMethod("show", signature(object="fg.covariance.base"), function(object){
    cat("     Class :", class(object), "\n");
    cat("Covar.Type :", object@type, "\n");
-   
+
    info <- get_param_info(object, NULL );
    cat("Parameters :", info$names, "\n");
 });
@@ -42,9 +42,24 @@ ARMA1_get_matrix <- function(object, par, times, options=list())
 
 	sigma <-  abs(s2) *
 	          ( (matrix(1, nrow=n, ncol=n) - diag(n)) * phi + diag(n)) *
-	          rho^abs( matrix( 1:n, nrow=n, ncol=n, byrow=T) -  matrix(1:n, nrow=n, ncol=n, byrow = F) ) 
+	          rho^abs( matrix( 1:n, nrow=n, ncol=n, byrow=T) -  matrix(1:n, nrow=n, ncol=n, byrow = F) )
 	return(sigma);
 
+}
+
+ARMA1_get_gradient <- function(object, par, times, options=list())
+{
+	rho<- par[1];
+	phi<- abs(par[2]);
+	s2 <- abs(par[3]);
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	rho_times <- abs( matrix( 1:n, nrow=n, ncol=n, byrow=T) -  matrix(1:n, nrow=n, ncol=n, byrow = F) );
+	d.rho <-  abs(s2) *  ( (matrix(1, nrow=n, ncol=n) - diag(n)) * phi + diag(n)) *  rho_times * rho^( rho_times-1 );
+	d.phi <-  abs(s2) *  ( (matrix(1, nrow=n, ncol=n) - diag(n))  + 0 ) *  rho^rho_times;
+	d.s2  <-  ((matrix(1, nrow=n, ncol=n) - diag(n)) * phi + diag(n) ) *  rho^rho_times;
+
+	return( list(d.rho, d.phi, d.s2) );
 }
 
 ARMA1_get_param_info<-function(object, times, options=list())
@@ -90,6 +105,8 @@ setClass("fg.covariance.ARMA1",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.ARMA1" ), ARMA1_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.ARMA1" ), ARMA1_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.ARMA1" ), ARMA1_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.ARMA1" ), ARMA1_check_param )
@@ -124,6 +141,31 @@ ARH1_get_matrix <- function(object, par, times, options=list())
 
 }
 
+ARH1_get_gradient <- function(object, par, times, options=list())
+{
+	rho<- par[1];
+	s2 <- abs(par[-1]);
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	rho_times <- abs( matrix(1:n, nrow=n, ncol=n, byrow=T) -
+		              matrix(1:n, nrow=n, ncol=n, byrow = F) )
+	sn_mat <- sqrt( matrix( s2, nrow=n, ncol=n, byrow = T) *
+		             matrix( s2, nrow=n, ncol=n, byrow = F) )
+
+	d.ret <- list();
+	d.ret[[1]] <- d.rho <-   rho_times * rho^(rho_times-1) * sn_mat
+
+	A <- cbind( 0.5*sqrt(s2), matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[i+1]] <-  rho^rho_times * ( A + t(A) )/sqrt(s2[i]);
+		A <- cbind( 0, A[, -NCOL(A)]);
+	}
+
+	return(d.ret);
+
+}
+
 ARH1_get_param_info<-function(object, times, options=list())
 {
 	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
@@ -153,7 +195,7 @@ ARH1_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 			sel = is.na(pheY[,i]) | is.na(pheY[,i+1]);
 			return( cor(pheY[!sel,i], pheY[!sel, i+1]) );
 			})));
-			
+
 	s2  = colSds(pheY)^2;
 	return( c(rho, s2*runif(n, 0.9, 1.1) ) );
 }
@@ -172,6 +214,8 @@ setClass("fg.covariance.ARH1",
 #setMethod("show", signature(object="fg.covariance.ARH1"), ARH1_show)
 
 setMethod("get_matrix",  signature( object = "fg.covariance.ARH1" ), ARH1_get_matrix )
+
+setMethod("get_gradient",  signature( object = "fg.covariance.ARH1" ), ARH1_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.covariance.ARH1" ), ARH1_get_param_info )
 
@@ -202,6 +246,20 @@ AR1_get_matrix <- function(object, par, times, options=list())
 		                         matrix(rep(1:n, n), nrow=n, byrow = F) )
 	return(sigma);
 
+}
+
+AR1_get_gradient <- function(object, par, times, options=list())
+{
+	rho<- par[1];
+	s2 <- abs(par[2]);
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	rho_times <- abs( matrix(1:n, nrow=n, ncol=n, byrow=T) -
+		              matrix(1:n, nrow=n, ncol=n, byrow = F) )
+
+	d.rho  <-  abs(s2) * rho_times * rho^(rho_times-1);
+	d.s2   <-  rho^rho_times;
+	return(list(d.rho, d.s2) );
 }
 
 AR1_get_param_info<-function(object, times, options=list())
@@ -250,6 +308,8 @@ setClass("fg.covariance.AR1",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.AR1" ), AR1_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.AR1" ), AR1_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.AR1" ), AR1_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.AR1" ), AR1_check_param )
@@ -275,8 +335,21 @@ CS_get_matrix <- function(object, par, times, options=list())
 	s2 <- abs(par[2]);
 	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
 
-	sigma <-  abs(s2) * rho^ abs (matrix(1, nrow=n , ncol=n) -diag(n));
+	sigma <-  abs(s2) * rho^abs (matrix(1, nrow=n , ncol=n) -diag(n));
 	return(sigma);
+
+}
+
+CS_get_gradient <- function(object, par, times, options=list())
+{
+	rho<- par[1];
+	s2 <- abs(par[2]);
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	d.rho <-  abs(s2) * rho^diag(0, ncol=n, nrow=n);
+	d.s2 <-   rho^abs (matrix(1, nrow=n , ncol=n) -diag(n));
+
+	return(list(d.rho, d.s2));
 
 }
 
@@ -324,6 +397,8 @@ setClass("fg.covariance.CS",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.CS" ), CS_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.CS" ), CS_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.CS" ), CS_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.CS" ), CS_check_param )
@@ -353,6 +428,29 @@ CSH_get_matrix <- function(object, par, times, options=list())
 				     sqrt( matrix(s2, nrow=n, ncol=n, byrow = T) *
 		                   matrix(s2, nrow=n, ncol=n, byrow = F) )
 	return(sigma);
+}
+
+
+CSH_get_gradient <- function(object, par, times, options=list())
+{
+	rho<- par[1];
+	s2 <- abs(par[-1]);
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	rho_times <- abs (matrix(1, nrow=n , ncol=n) -diag(n));
+	s2_mat <- sqrt( matrix(s2, nrow=n, ncol=n, byrow = T) * matrix(s2, nrow=n, ncol=n, byrow = F) );
+
+	d.ret <- list();
+	d.ret[[1]] <- d.rho <- rho_times * rho^(rho_times-1) * s2_mat
+
+	A <- cbind( 0.5*sqrt(s2), matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[i+1]] <-  rho^rho_times * ( A + t(A) )/sqrt(s2[i]);
+		A <- cbind( 0, A[, -NCOL(A)]);
+	}
+
+	return(d.ret);
 
 }
 
@@ -384,7 +482,7 @@ CSH_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 	sel <- is.na(pheY[,1]) | is.na(pheY[,2]);
 	rho <- cor(pheY[!sel,1], pheY[!sel, 2]);
 	s2  <- colSds( pheY, na.rm=T )^2;
-	
+
 	return( c(rho, s2*runif(n, 0.9, 1.1) ) );
 }
 
@@ -402,6 +500,8 @@ setClass("fg.covariance.CSH",
 #setMethod("show", signature( object = "fg.covariance.CSH"), CSH_show)
 
 setMethod("get_matrix",  signature( object = "fg.covariance.CSH" ), CSH_get_matrix )
+
+setMethod("get_gradient",  signature( object = "fg.covariance.CSH" ), CSH_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.covariance.CSH" ), CSH_get_param_info )
 
@@ -430,6 +530,23 @@ VS_get_matrix <- function(object, par, times, options=list())
 
 	sigma <-  diag(s2);
 	return(sigma);
+
+}
+
+VS_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	s2 <- abs(par);
+
+	d.ret <- list();
+	for (i in 1:length(s2))
+	{
+		A <- matrix(0, ncol=n, nrow=n);
+		A[i,i] <- 1;
+		d.ret[[i]] <- A;
+	}
+
+	return(d.ret);
 
 }
 
@@ -472,6 +589,8 @@ setClass("fg.covariance.VS",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.VS" ), VS_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.VS" ), VS_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.VS" ), VS_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.VS" ), VS_check_param )
@@ -500,6 +619,26 @@ FA1_get_matrix <- function(object, par, times, options=list())
 	sigma <-  d*diag(n) + sqrt( matrix(s2, nrow=n, ncol=n, byrow = T) *
 		                   matrix(s2, nrow=n, ncol=n, byrow = F) )
 	return(sigma);
+
+}
+
+FA1_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	d <- abs(par[1]);
+	s2 <- abs(par[-1]);
+
+	d.ret <- list();
+	d.ret[[1]] <- d.d <- diag(n);
+
+	A <- cbind( 0.5*sqrt(s2), matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[i+1]] <-  ( A + t(A) )/sqrt(s2[i]);
+		A <- cbind( 0, A[, -NCOL(A)]);
+	}
+
+	return(d.ret);
 
 }
 
@@ -542,6 +681,8 @@ setClass("fg.covariance.FA1",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.FA1" ), FA1_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.FA1" ), FA1_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.FA1" ), FA1_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.FA1" ), FA1_check_param )
@@ -573,6 +714,33 @@ FAH1_get_matrix <- function(object, par, times, options=list())
 	return(sigma);
 
 }
+
+FAH1_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	d <- abs(par[1:n]);
+	s2 <- abs(par[-(1:n)]);
+
+    sn_mat <- matrix(s2, nrow=n, ncol=n, byrow = T) * matrix(s2, nrow=n, ncol=n, byrow = F) ;
+
+	d.ret <- list();
+	for (i in 1:length(d))
+	{
+		A <- array(0, dim=c(n,n));
+		A[i,i] <- 1;
+		d.ret[[i]] <- A;
+	}
+
+	A <- cbind( 0.5*sqrt(s2), matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[i+n]] <-  ( A + t(A) )/sqrt(s2[i]);
+		A <- cbind( 0, A[, -NCOL(A)]);
+	}
+
+	return(d.ret);
+}
+
 
 FAH1_get_param_info<-function(object, times, options=list())
 {
@@ -613,6 +781,8 @@ setClass("fg.covariance.FAH1",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.FAH1" ), FAH1_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.FAH1" ), FAH1_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.FAH1" ), FAH1_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.FAH1" ), FAH1_check_param )
@@ -638,10 +808,30 @@ HF_get_matrix <- function(object, par, times, options=list())
 	lambda <- abs(par[1]);
 	s2 <- abs(par[-1]);
 
-	sigma <-  ( matrix(s2, nrow=n, ncol=n, byrow = T)  + matrix(s2, nrow=n, ncol=n, byrow = F) )/2 - 
+	sigma <-  ( matrix(s2, nrow=n, ncol=n, byrow = T)  + matrix(s2, nrow=n, ncol=n, byrow = F) )/2 -
 	          lambda*( matrix(1, ncol=n, nrow=n) - diag(n)  );
-if(sum(sigma<0)>0) show(sigma);
+#if(sum(sigma<0)>0) show(sigma);
 	return(sigma);
+
+}
+
+HF_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	lambda <- abs(par[1]);
+	s2 <- abs(par[-1]);
+
+	d.ret <- list();
+	d.ret[[1]] <- d.lambda <-  -1*( matrix(1, ncol=n, nrow=n) - diag(n)  );
+
+	A <- cbind( 0.5, matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[i+1]] <-  ( A + t(A) );
+		A <- cbind( 0, A[,-NCOL(A)]);
+	}
+
+	return(d.ret);
 
 }
 
@@ -685,6 +875,8 @@ setClass("fg.covariance.HF",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.HF" ), HF_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.HF" ), HF_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.HF" ), HF_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.HF" ), HF_check_param )
@@ -713,6 +905,22 @@ TOEP_get_matrix <- function(object, par, times, options=list())
 
 	return(sigma);
 }
+
+TOEP_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	s2 <- abs( par );
+
+	mat <- matrix(1:n, nrow=n, ncol = n);
+	sn_mat <- abs( mat - t(mat) ) + 1
+
+	d.ret <- list();
+	for(i in 1:n)
+		d.ret[[i]] <- matrix(as.numeric(sn_mat==i), nrow=n, ncol = n);
+
+	return(d.ret);
+}
+
 
 TOEP_get_param_info<-function(object, times, options=list())
 {
@@ -754,6 +962,8 @@ setClass("fg.covariance.TOEP",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.TOEP" ), TOEP_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.TOEP" ), TOEP_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.TOEP" ), TOEP_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.TOEP" ), TOEP_check_param )
@@ -780,10 +990,33 @@ TOEPH_get_matrix <- function(object, par, times, options=list())
 	rho <- c(1, abs(par[1:(n-1)]) )
 	s2 <- abs( par[-c(1:(n-1))] );
 	mat <- matrix(1:n, nrow=n, ncol = n);
-	s2.mat <- matrix(s2, nrow=n, ncol = n);
-	sigma <- sqrt(s2.mat*t(s2.mat)) * matrix( rho[ abs( mat - t(mat) ) + 1 ], nrow=n, ncol=n);
+	s2_mat <- matrix(s2, nrow=n, ncol = n);
+	sigma <- sqrt(s2_mat*t(s2_mat)) * matrix( rho[ abs( mat - t(mat) ) + 1 ], nrow=n, ncol=n);
 
 	return(sigma);
+}
+
+TOEPH_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	rho <- c(1, abs(par[1:(n-1)]) )
+	s2 <- abs( par[-c(1:(n-1))] );
+	mat <- matrix(1:n, nrow=n, ncol = n);
+	s2_mat <- matrix(s2, nrow=n, ncol = n);
+	sn_mat <- abs( mat - t(mat) ) + 1;
+
+	d.ret <- list();
+	for(i in 1:(n-1))
+		d.ret[[i]] <- sqrt(s2_mat*t(s2_mat)) * matrix(as.numeric(sn_mat==(i+1)), nrow=n, ncol = n);
+
+	A <- cbind( 0.5*sqrt(s2), matrix(0, ncol=n-1, nrow=n));
+	for (i in 1:length(s2))
+	{
+		d.ret[[ n-1+i ]] <-   ( A + t(A) ) / sqrt(s2[i]) * matrix( rho[ abs( mat - t(mat) ) + 1 ], nrow=n, ncol=n);
+		A <- cbind( 0, A[,-NCOL(A)]);
+	}
+
+	return(d.ret);
 }
 
 TOEPH_get_param_info<-function(object, times, options=list())
@@ -831,6 +1064,8 @@ setClass("fg.covariance.TOEPH",
 
 setMethod("get_matrix",  signature( object = "fg.covariance.TOEPH" ), TOEPH_get_matrix )
 
+setMethod("get_gradient",  signature( object = "fg.covariance.TOEPH" ), TOEPH_get_gradient )
+
 setMethod("get_param_info",  signature( object = "fg.covariance.TOEPH" ), TOEPH_get_param_info )
 
 setMethod("check_param",  signature( object = "fg.covariance.TOEPH" ), TOEPH_check_param )
@@ -854,6 +1089,12 @@ SI_get_matrix <- function(object, par, times, options=list())
 {
 	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
 	return(abs(par[1])*diag(n));
+}
+
+SI_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+	return(list(diag(n)));
 }
 
 SI_get_param_info<-function(object, times, options=list())
@@ -891,6 +1132,8 @@ setClass("fg.covariance.SI",
 #setMethod("show", signature( object = "fg.covariance.SI"), SI_show)
 
 setMethod("get_matrix",  signature( object = "fg.covariance.SI" ), SI_get_matrix )
+
+setMethod("get_gradient",  signature( object = "fg.covariance.SI" ), SI_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.covariance.SI" ), SI_get_param_info )
 
@@ -930,6 +1173,35 @@ SAD1_get_matrix <- function(object, par, times, options=list())
 
 	sigma <- sigma*abs(v2);
 	return(sigma);
+}
+
+SAD1_get_gradient <- function(object, par, times, options=list())
+{
+	n <- ifelse ( is.vector(times), length(times), NCOL(times) );
+
+	phi<- par[1];
+	v2 <- par[2];
+
+	tmp <- 1/(1-phi^2);
+	sigma <- array(1, dim=c(n,n));
+	for(i in 1:n)
+	{
+		sigma[i,i:n] <- phi^( c(i:n) - i ) * (1-phi^(2*i))/tmp;
+		sigma[i:n,i] <- sigma[i,i:n];
+	}
+
+	d.v2 <- sigma;
+
+	d.tmp<- 2*phi/((1-phi^2)^2);
+	d.phi <- array(1, dim=c(n,n));
+	for(i in 1:n)
+	{
+		d.phi[i,i:n] <- ( phi^( c(i:n) - i ) - phi^( c(i:n) +i ) ) * d.tmp +
+		                  ( (c(i:n) - i )*phi^( c(i:n) - i -1) - ( c(i:n) +i )* phi^( c(i:n) +i -1)) *tmp;
+		d.phi[i:n,i] <- d.phi[i,i:n];
+	}
+
+	return(list(d.phi, d.v2) );
 }
 
 SAD1_get_param_info<-function(object, times, options=list())
@@ -974,6 +1246,8 @@ setClass("fg.covariance.SAD1",
 #setMethod("show", signature(object="fg.covariance.SAD1"), SAD1_show)
 
 setMethod("get_matrix",  signature( object = "fg.covariance.SAD1" ), SAD1_get_matrix )
+
+setMethod("get_gradient",  signature( object = "fg.covariance.SAD1" ), SAD1_get_gradient )
 
 setMethod("get_param_info",  signature( object = "fg.covariance.SAD1" ), SAD1_get_param_info )
 

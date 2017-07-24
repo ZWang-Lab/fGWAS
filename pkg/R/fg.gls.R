@@ -9,13 +9,14 @@ snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 
 	if(options$verbose)
 	{
-		cat("  SNP Filtering by fGWAS method......\n");
+		cat("* Method =", options$method, "\n" );
 		cat("* SNP Count =", obj.gen$n.snp, "\n" );
 		cat("* Sample Count =", obj.phe$n.ind, "\n" );
 		cat("* Parallel CPU Count =", options$ncores, "\n" );
-		cat("* Method =", options$method, "\n" );
 		cat("* Verbose =", options$verbose, "\n" );
 	}
+
+	intercept <- ifelse ( !is.null(obj.phe$intercept), obj.phe$intercept, FALSE);
 
 	if(is.null(snp.idx)) snp.idx <- 1:obj.gen$n.snp
 	snp.len <- length(snp.idx);
@@ -39,9 +40,9 @@ snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 
 		r.fgwas0 <- list();
 		if( NCOL(obj.phe$pheY) == 1)
-			r.fgwas0 <- bls.fgwas( snp.idx.sub, snp.matx, obj.phe$pheY, obj.phe$pheX, options$ncores )
+			r.fgwas0 <- bls.fgwas( i, snp.idx.sub, snp.matx, obj.phe$pheY, obj.phe$pheX, intercept=intercept, options$ncores )
 		else
-			r.fgwas0 <- gls.fgwas( snp.idx.sub, snp.matx, obj.phe$pheY, obj.phe$pheT, obj.phe$pheX, options$ncores )
+			r.fgwas0 <- gls.fgwas( i, snp.idx.sub, snp.matx, obj.phe$pheY, obj.phe$pheT, obj.phe$pheX, intercept=intercept, options$ncores )
 
 		if( r.fgwas0$error )
 			return(r.fgwas0);
@@ -55,7 +56,7 @@ snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 	return(list(error=F, result = r.fgwas) );
 }
 
-gls.fgwas <- function( snp.idx, snp.mat, pheY, pheZ, pheX=NULL, ncores=1)
+gls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheZ, pheX=NULL, intercept=FALSE, ncores=1)
 {
 	if ( NCOL(pheY) != NCOL(pheZ) )
 	{
@@ -82,12 +83,14 @@ gls.fgwas <- function( snp.idx, snp.mat, pheY, pheZ, pheX=NULL, ncores=1)
 		phe.gls.mat <- rbind( phe.gls.mat, phe.tmp );
 	}
 
-	intercept <- ifelse ( !is.null(obj.phe$params), obj.phe$params$intercept, FALSE);
 	reg.str0 <- ifelse( length(covar.names)>0, paste("Y ~ ", ifelse(intercept, "1+", ""), paste(covar.names,collapse= "+")),  "Y ~ 1" );
 	reg.str1 <- ifelse( length(covar.names)>0, paste("Y ~ ", ifelse(intercept, "1+", ""), paste(covar.names,collapse= "+"), "+ as.factor(SNP)") ,  "Y ~ 1 + as.factor(SNP)" );
 
-	cat("* H0 =", as.character(reg.str0), "\n" );
-	cat("* H1 =", as.character(reg.str1), "\n" );
+	if( sect.idx ==1)
+	{
+		cat("* H0 =", as.character(reg.str0), "\n" );
+		cat("* H1 =", as.character(reg.str1), "\n" );
+	}
 
 	r0 <- try( gls( as.formula(reg.str0), phe.gls.mat, correlation = corAR1(form = ~ Z | ID ), method="ML" ) );
 	if(class(r0)=="try-error")
@@ -155,7 +158,8 @@ gls.fgwas <- function( snp.idx, snp.mat, pheY, pheZ, pheX=NULL, ncores=1)
 	r.gls <- c();
 	if( ncores > 1 && require("snowfall") )
 	{
-		cat("Starting parallel computing, snowfall/snow......\n");
+		if( .RR("debug") )
+			cat("Starting parallel computing, snowfall/snow......\n");
 		snowfall::sfInit(parallel = TRUE, cpus = ncores, type = "SOCK")
 
 		n.percpu <- ceiling( NROW(snp.mat) / ncores );
@@ -164,7 +168,8 @@ gls.fgwas <- function( snp.idx, snp.mat, pheY, pheZ, pheX=NULL, ncores=1)
 		gls.cluster <- snowfall::sfClusterApplyLB( 1:ncores, cpu.fun);
 		snowfall::sfStop();
 
-		cat("Stopping parallel computing......\n");
+		if( .RR("debug") )
+			cat("Stopping parallel computing......\n");
 
 		r.gls <- do.call( rbind, gls.cluster );
 	}
@@ -181,7 +186,7 @@ gls.fgwas <- function( snp.idx, snp.mat, pheY, pheZ, pheX=NULL, ncores=1)
 	return(list(error=F, r=r.gls));
 }
 
-bls.fgwas <- function( snp.idx, snp.mat, pheY, pheX = NULL, ncores = 1)
+bls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheX = NULL, intercept=FALSE, ncores = 1)
 {
 	sample.ids <- intersect( rownames(pheY), colnames(snp.mat)[-c(1:3)] );
 	if(length(sample.ids)==0)
@@ -206,12 +211,14 @@ bls.fgwas <- function( snp.idx, snp.mat, pheY, pheX = NULL, ncores = 1)
 	if(length(phe.missing)>0)
 		phe.mat <- phe.mat[-phe.missing, , drop=F ];
 
-	intercept <- ifelse ( !is.null(obj.phe$params), obj.phe$params$intercept, FALSE);
 	reg.str0 <- ifelse( is.null(colnames(pheX)), "Y ~ 1", paste( "Y ~", ifelse(intercept, "1+", ""), paste(colnames(pheX),collapse= "+") )  );
 	reg.str1 <- ifelse( is.null(colnames(pheX)), "Y ~ 1 + as.factor(SNP)", paste( "Y ~", ifelse(intercept, "1+", ""), paste(colnames(pheX),collapse= "+"), "+ as.factor(SNP)") );
 
-	cat("* H0 =", as.character(reg.str0), "\n" );
-	cat("* H1 =", as.character(reg.str1), "\n" );
+	if( sect.idx ==1)
+	{
+		cat("* H0 =", as.character(reg.str0), "\n" );
+		cat("* H1 =", as.character(reg.str1), "\n" );
+	}
 
 	r0 <- try( do.call("gls", args = list(as.formula(reg.str0), phe.mat, method="ML" ) ) );
 	if(class(r0)=="try-error")
@@ -279,7 +286,9 @@ bls.fgwas <- function( snp.idx, snp.mat, pheY, pheX = NULL, ncores = 1)
 	r.bls <- c();
 	if( ncores>1 && require("snowfall") )
 	{
-		cat("\n  Starting parallel computing, snowfall/snow......\n");
+		if( .RR("debug") )
+			cat("\n  Starting parallel computing, snowfall/snow......\n");
+
 		snowfall::sfInit(parallel = TRUE, cpus = ncores, type = "SOCK")
 
 		n.percpu <- ceiling( NROW(snp.mat) / ncores );
@@ -288,7 +297,8 @@ bls.fgwas <- function( snp.idx, snp.mat, pheY, pheX = NULL, ncores = 1)
 		bls.cluster <- snowfall::sfClusterApplyLB( 1:ncores, cpu.fun);
 		snowfall::sfStop();
 
-		cat("  Stopping parallel computing......\n\n");
+		if( .RR("debug") )
+			cat("  Stopping parallel computing......\n\n");
 
 		r.bls <- do.call( rbind, bls.cluster );
 

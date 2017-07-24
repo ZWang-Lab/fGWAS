@@ -1,56 +1,51 @@
 \name{summary.fgwas.scan.obj}
 \alias{summary.fgwas.scan.obj}
 
-\title{Summary of the data object}
+\title{Summarizing the result object}
 
 \description{ 
-  Summarize information for the data object.
+ Summarizing the result object.
 } 
 
 \usage{ \method{summary}{fgwas.scan.obj}( object, ... ) }
 
 \arguments{
-\item{object}{a data object return by \code{\link{fg.snpscan}} }
+\item{object}{a result object return by \code{\link{fg.snpscan}} }
 \item{...}{additional arguments affecting the summary produced.}
 }
 
 \value{
-No return values, only output the summary information on the R console.
+This function returns a data frame including the results of scanned SNPs and excluding covariate and curve object. \cr
 }
 
 \details{
 
-The data object is described in \code{\link{fg.snpscan}}.
-
-The following example demonstrates summary command for a data object.
+Below lists all columns for the analysis with curve 'Legendre2'  and covariance 'AR1':\cr
 
 \preformatted{
-Data set for FunMap model:
-------------------------------------
-          Date: 2010-03-19 03:49:36
-          Model: Logistic Curve
-          Cross: F2
-    Pheno. file: simu.pheno.LC.F2
-     Geno. file: simu.geno.LC.F2
-     Maker file: simu.marker.LC.F2
-    Sample size: 100       
-   Sample times: 7         
-   Marker count: 6         
-          LC  a: 19.83678  
-              b: 8.96370   
-              r: 0.47202   
-            rho: 0.75430   
-         sigma2: 0.58849   
-------------------------------------
 
+#obj.fgwas is result object of 'fgwas' method.
+> colnames(summary(obj.fgwas))
+ [1] "INDEX"      "NAME"       "CHR"        "POS"        "MAF"       
+ [6] "NMISS"      "SNP0"       "SNP1"       "SNP2"       "GENO"      
+[11] "LR"         "pv"         "L0"         "h0.X0"      "h0.X1"     
+[16] "h0.X2"      "h0.X3"      "h0.X4"      "h0.X5"      "h0.X6"     
+[21] "h0.u0"      "h0.u1"      "h0.u2"      "h0X.rho"    "h0X.sigma2"
+[26] "L1"         "h1.X0"      "h1.X1"      "h1.X2"      "h1.X3"     
+[31] "h1.X4"      "h1.X5"      "h1.X6"      "h1.G0.u0"   "h1.G0.u1"  
+[36] "h1.G0.u2"   "h1.G1.u0"   "h1.G1.u1"   "h1.G1.u2"   "h1.G2.u0"  
+[41] "h1.G2.u1"   "h1.G2.u2"   "h1X.rho"    "h1X.sigma2"
 }
 
 }
-
-
 \examples{
-#check the codes in fg.snpscan()
+r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, covariance.type="AR1", method="fast");
+tb <- summary(obj.scan);
+head(tb);
+
+
 }
 
-\keyword{Data}
+\keyword{Scanning}
 \keyword{Summary}

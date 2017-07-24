@@ -5,7 +5,7 @@ Title: Functional Genome-wide Association Study.
 Author: Center for Computational Biology at Beijing Forest University.
 Maintainer: Zhong Wang <wzhy2000@hotmail.com>
 Description: Analysis genetic effects to detect the significant SNPs associated with longitudinal traits based on fGWAS method.
-Depends: R (>= 2.6.0), mvtnorm, snpStats, lme4, nlme, parallel, minpack.lm
+Depends: R (>= 2.6.0), minpack.lm, snpStats, lme4, nlme, mvtnorm, parallel, methods, stats, graphics, grDevices, utils
 License: GPL-3
 Suggests: snow
 URL: http://www.github.com/wzhy2000/fgwas

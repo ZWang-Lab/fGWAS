@@ -1,6 +1,10 @@
 fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, options=list() )
 {
-	intercept <- ifelse( is.null(obj.phe$params),  FALSE, obj.phe$params$intercept );
+	default_options <- list( max.optim.failure=100, min.optim.success=20, R2.loop=5, verbose=FALSE);
+	default_options[names(options)] <- options;
+	options <- default_options;
+
+	intercept <- ifelse( is.null(obj.phe$intercept),  FALSE, obj.phe$intercept );
 	pheX <- obj.phe$pheX;
 	if(intercept)
 	{
@@ -10,10 +14,11 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 			pheX <- cbind(1, pheX );
 	}
 
-	if( is.null( obj.phe$obj.curve ) )
+	r.test <- NULL;
+	if( is.null( obj.phe$obj.curve ) || toupper(obj.phe$obj.curve@type) != toupper(curve.type))
 	{
-		cat("  No curve is specified, curve fitting is being performed.\n");
-		r.test <- fg_fit_curve( obj.phe$pheY, pheX, obj.phe$pheT, curve.type=curve.type, file.plot.pdf=file.plot.pdf );
+		cat("  No curve or new curve type is specified, curve fitting is being performed.\n");
+		r.test <- fg_fit_curve( obj.phe$pheY, pheX, obj.phe$pheT, curve.type=curve.type, file.plot.pdf=file.plot.pdf, options=options );
 
 		if(r.test$error)
 			stop("? No curve is fitted to this data.\n");
@@ -23,16 +28,18 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 	}
 
 	cat("  Curve Type==> ", obj.phe$obj.curve@type, " <==\n");
-	r <- proc_est_curve( obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve )
+	par.init <- if(!is.null(r.test)) r.test$par else NULL;
+	r <- proc_est_curve( obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve, par.init= par.init, options=options )
 	if( r$error )
-		return(list(error=T, err.info="Can not estimate the parameter of mean vector according to the curve function" ) )
+		stop("Can't estimate the parameters of mean vector according to the curve function" );
 
 	parX.len <- NCOL(pheX)
 	if(is.null(pheX)) parX.len <- 0;
 
 	cat(" Parameter range estimation ...... \n")
-	range <- proc_est_curve_range(obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve, par.init = r$par);
-
+	options$max.optim.failure <- 10; 
+	options$min.optim.success <- 2;
+	range <- proc_est_curve_range(obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve, par.init = r$par, options=options);
 	obj.phe$est.curve <- list( type = obj.phe$obj.curve@type,
 	                           intercept = intercept,
 							   param = if(parX.len==0) r$par else r$par[-c(1:parX.len)],
@@ -40,26 +47,32 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 							   param.upper = if(parX.len==0) r$par else range$upper[-c(1:parX.len)],
 							   parX  = if(parX.len==0) c() else r$par[1:parX.len],
 							   parX.lower = if(parX.len==0) c() else range$lower[1:parX.len],
-							   parX.upper = if(parX.len==0) c() else range$upper[1:parX.len] );
+							   parX.upper = if(parX.len==0) c() else range$upper[1:parX.len],
+							   R2 = r$R2);
+
+	if( r$R2 < - 0.1 )
+		cat("! The R2 value for curve fitting indicates the curve type is inappropriate for the phenotype data.(R2=", r$R2,")\n")
 
 	if( is.null(obj.phe$obj.covar) || ( toupper(obj.phe$obj.covar@type) != toupper(covariance.type) ) )
 	{
-		r.test <- fg_fit_covar( obj.phe$pheY, pheX, obj.phe$pheT, r$y.resd, obj.phe$obj.curve, covariance.type );
+		r.test <- fg_fit_covar( obj.phe$pheY, pheX, obj.phe$pheT, r$y.resd, obj.phe$obj.curve, covariance.type, options=options );
 
 		if(r.test$error)
 			stop("? No covariance is fitted to this data.\n")
 		else
 		{
-			obj.phe$summary.covar <- r.test;
+			obj.phe$summary.covariance <- r.test;
 			obj.phe$obj.covar <- fg.getCovariance( r.test$type );
 		}
 	}
 
 	cat("  Covariance Type==> ", obj.phe$obj.covar@type, " <==\n");
 
-	r.est <- proc_est_covar( r$y.resd, NULL, obj.phe$pheT, obj.phe$obj.curve, obj.phe$obj.covar );
+	options$max.optim.failure <- 50; 
+	options$min.optim.success <- 5;
+	r.est <- proc_est_covar( r$y.resd, NULL, obj.phe$pheT, obj.phe$obj.curve, obj.phe$obj.covar, options=options );
 	if ( r.est$error )
-		return(list(error=T, err.info="Can not estimate the parameter of mean vector according to the curve function" ) );
+		stop("Can't estimate the parameters of covariance structure according to the curve function" );
 
 	obj.phe$est.covar<- list( type = obj.phe$obj.covar@type, param = r.est$par);
 	obj.phe$error <- F;
@@ -94,7 +107,49 @@ fn_get_resd<-function(pheY, pheX, pheT, obj.curve, parin  )
 	return( y_resd );
 }
 
-proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=list(n.loop=10)  )
+get_R2<-function(pheY, pheX, pheT, obj.curve, h.par, snp.vec=NULL )
+{
+	pheY_hat <- matrix(NA, nrow=NROW(pheY), ncol=NCOL(pheY) );
+	pheY_hat_vec <- c(pheY_hat);
+
+	pheT_vec <- c(pheT);
+	pheY_vec <- c(pheY);
+	for (ti in unique(pheT_vec) )
+	{
+		if (!is.na(ti))
+			pheY_hat_vec[which(pheT_vec==ti)] <- mean(pheY_vec[which(pheT_vec==ti)], na.rm=T)
+	}
+
+	pheY_hat <- matrix(pheY_hat_vec, nrow=NROW(pheY), ncol=NCOL(pheY) );
+
+	if(is.null(snp.vec))
+		y.resd <- fn_get_resd( pheY, pheX, pheT, obj.curve, h.par )
+	else
+	{
+		y.resd <- c();
+		par.X <- if(is.null(pheX)) NULL else h.par[1:NCOL(pheX)];
+		par.curve <- if(is.null(pheX)) h.par else h.par[-c(1:NCOL(pheX))];
+		len.curve <- get_param_info( obj.curve, pheT)$count;
+
+		for(i in 0:2)
+		{
+			idx <- which(snp.vec==i);
+			if(length(idx)>0)
+			{
+				hx.par <- c(par.X, par.curve[1:len.curve]);
+				par.curve <- par.curve[-c(1:len.curve)];
+				y.resd <- rbind(y.resd, fn_get_resd( pheY[idx,,drop=F], pheX[idx,,drop=F], pheT[idx,,drop=F], obj.curve, hx.par ) );
+			}
+		}
+	}
+
+	#R2   <- sum(((pheY-y.resd)-pheY_hat)^2, na.rm=T)/sum((pheY-pheY_hat)^2, na.rm=T)
+	R2   <- 1 - sum(y.resd^2, na.rm=T)/sum((pheY-pheY_hat)^2, na.rm=T)
+
+	return(R2);
+}
+
+proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=NULL  )
 {
 	options$max.time <- max(pheT, na.rm=T)
 	options$min.time <- min(pheT, na.rm=T)
@@ -152,62 +207,74 @@ proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=l
 		par.init <- c( par.init, est_init_param( obj.curve, pheY, pheX, pheT, options ) );
 	}
 
-	if(.RR("debug")) cat("par.init", par.init, "\n")
+	if(.RR("debug")) cat("Initial parameters for curve: ", par.init, "\n")
 
-	h0 <- proc_mle_loop(  pheY, pheX, pheT,
-			obj.curve,
-			fn_mle_est,
-			mle_extra_par = list( pheY=pheY, pheX=pheX, pheT=pheT, obj.curve=obj.curve ),
-			parin = par.init,
-			fn_init_par = get_init_curve_par,
-			fn_rand_par = get_rand_curve_par,
-			options=options )
-
-	if(.RR("debug")) cat( "MU[F]", h0$value, h0$par, "\n");
-
-	r.check <- check_fittness( pheY, pheX, pheT, obj.curve, h0$par );
-	if( !r.check$fit || !is.finite( h0$value ) )
-		return(list(error=T, par=NA, val=NA))
-	else
+	R2.max <- -Inf;
+	R2.success <- 0;
+	R2.failed <- 0
+	R2.list <- NULL;
+	while ( R2.success < ifelse( is.null(options$R2.loop), 5, options$R2.loop ) && R2.failed <= 500  )
 	{
-		y.resd <- fn_get_resd( pheY, pheX, pheT,  obj.curve, h0$par )
-		## The sum of the squared differences between each observation and its predicted value.
-		y.SSE <- sum(y.resd^2,na.rm=T) ;
+		reset_seed();
+		h0 <- proc_mle_loop(  pheY, pheX, pheT,
+				obj.curve,
+				fn_mle_est,
+				mle_extra_par = list( pheY=pheY, pheX=pheX, pheT=pheT, obj.curve=obj.curve ),
+				parin = par.init,
+				fn_init_par = get_init_curve_par,
+				fn_rand_par = get_rand_curve_par,
+				options=options )
 
-		##Gives the average of the squares of the errors of each value.
-		y.MSE <- y.SSE/length(which(!is.na(pheY)));
-
-		##The square root of the MSE that estimates the standard deviation of the random error.
-		y.RMSE <- sqrt(y.MSE)
-		## pramater count
-		K <- get_param_info(obj.curve, pheT)$count;
-		n.sample <- NROW(pheY);
-
-		AIC  <- 2*K +n.sample*log(y.SSE/n.sample)
-		AICc <- log(y.SSE/n.sample) + (n.sample+K)/(n.sample-K-2)
-		BIC  <- n.sample*log(y.SSE/n.sample) + K*log(n.sample)
-
-		pheY_hat <- matrix(NA, nrow=NROW(pheY), ncol=NCOL(pheY) );
-		pheY_hat_vec <- c(pheY_hat);
-
-		pheT_vec <- c(pheT);
-		pheY_vec <- c(pheY);
-		for (ti in unique(pheT_vec) )
+		if(is.null(h0) || is.na(h0$value) || is.infinite(h0$value))
 		{
-			if (!is.na(ti))
-				pheY_hat_vec[which(pheT_vec==ti)] <- mean(pheY_vec[which(pheT_vec==ti)], na.rm=T)
+			R2.failed <- R2.failed + 1;
+			next;
 		}
+		else
+		{
+			R2 <- get_R2(pheY, pheX, pheT,  obj.curve, h0$par );
+if(.RR("debug")) cat( "MLE results for curve: R2=", R2, h0$value, h0$par, "\n");
 
-		pheY_hat <- matrix(pheY_hat_vec, nrow=NROW(pheY), ncol=NCOL(pheY) );
-		R2   <- sum(((pheY-y.resd)-pheY_hat)^2, na.rm=T)/sum((pheY-pheY_hat)^2, na.rm=T)
+			if( R2 > 1 || R2 < -0.1 )
+				R2.failed <- R2.failed + 1
+			else
+				R2.success <- R2.success + 1;
 
-		return(list(error=F, par.count = K, AIC = AIC, AICc = AICc, BIC = BIC,
-			              SSE = y.SSE, MSE = y.MSE, RMSE = y.RMSE, R2 = R2,
-			              par=h0$par, y.resd=y.resd))
+			if( R2 <= R2.max ) next;
+
+			R2.max <- R2;
+			par.init <- h0$par*runif(length(h0$par), 0.99, 1);
+
+			y.resd <- fn_get_resd( pheY, pheX, pheT,  obj.curve, h0$par );
+			## The sum of the squared differences between each observation and its predicted value.
+			y.SSE <- sum(y.resd^2,na.rm=T) ;
+
+			##Gives the average of the squares of the errors of each value.
+			y.MSE <- y.SSE/length(which(!is.na(pheY)));
+
+			##The square root of the MSE that estimates the standard deviation of the random error.
+			y.RMSE <- sqrt(y.MSE)
+			## pramater count
+			K <- get_param_info(obj.curve, pheT)$count;
+			n.sample <- NROW(pheY);
+
+			AIC  <- 2*K +n.sample*log(y.SSE/n.sample)
+			AICc <- log(y.SSE/n.sample) + (n.sample+K)/(n.sample-K-2)
+			BIC  <- n.sample*log(y.SSE/n.sample) + K*log(n.sample)
+
+			R2.list <- list(error=F, par.count = K, AIC = AIC, AICc = AICc, BIC = BIC,
+							  SSE = y.SSE, MSE = y.MSE, RMSE = y.RMSE, R2 = R2,
+							  par=h0$par, y.resd=y.resd)
+		}
 	}
+
+	if (is.null(R2.list))
+		return(list(error=T, par=NA, val=NA, R2=NA))
+	else
+		return(R2.list);
 }
 
-proc_est_curve_range<-function( pheY, pheX, pheT, f.curve, par.init )
+proc_est_curve_range<-function( pheY, pheX, pheT, f.curve, par.init, options=NULL )
 {
 	n.obs <- NROW( pheY );
 	mu.pars <- c();
@@ -222,7 +289,7 @@ proc_est_curve_range<-function( pheY, pheX, pheT, f.curve, par.init )
 		if( !is.null(pheX) ) pheX0 <- pheX[y.sub,,drop=F];
 		if( !is.null(dim(pheT)) )  pheT0 <- pheT[y.sub,,drop=F] else pheT0 <- pheT;
 
-		r <- proc_est_curve( pheY0, pheX0, pheT0, f.curve, par.init, options=list(n.loop=2) );
+		r <- proc_est_curve( pheY0, pheX0, pheT0, f.curve, par.init, options=options );
 		if (r$error) next;
 
 		mu.pars <- rbind(mu.pars, r$par);
@@ -242,7 +309,7 @@ proc_est_curve_range<-function( pheY, pheX, pheT, f.curve, par.init )
 }
 
 
-proc_est_covar<-function( Y.resd, pheX, pheT, obj.curve, obj.covar, par.init=NULL, options=list(n.loop=10)  )
+proc_est_covar<-function( Y.resd, pheX, pheT, obj.curve, obj.covar, par.init=NULL, options=NULL  )
 {
 	get_init_covar_par<-function( Y.resd, pheX, pheT, f.covar)
 	{
@@ -277,6 +344,8 @@ proc_est_covar<-function( Y.resd, pheX, pheT, obj.curve, obj.covar, par.init=NUL
 	if( is.null( par.init) )
 		par.init <- get_init_covar_par(  Y.resd, pheX, pheT, obj.covar );
 
+	if(.RR("debug"))  cat( "Initial parameters for covariance: ", par.init, "\n");
+
 	h0 <- proc_mle_loop( Y.resd, pheX, pheT,
 			obj.covar,
 			fn_mle_est,
@@ -286,7 +355,7 @@ proc_est_covar<-function( Y.resd, pheX, pheT, obj.curve, obj.covar, par.init=NUL
 			fn_rand_par = get_rand_covar_par,
 			options=options )
 
-	if(.RR("debug"))  cat( "COV(F)", h0$value, h0$par, "\n");
+	if(.RR("debug"))  cat( "MLE results for curve covariance:", h0$value, h0$par, "\n");
 
 	if( is.finite( h0$value ) )
 	{
@@ -300,12 +369,12 @@ proc_est_covar<-function( Y.resd, pheX, pheT, obj.curve, obj.covar, par.init=NUL
 		return(list(error=T, par=NA, err.info="Failed to estimate covariance structure."));
 }
 
-proc_mle_loop<-function(  pheY, pheX, pheT, f.obj, fn_mle, mle_extra_par, parin, fn_init_par, fn_rand_par, options=list(n.loop=10)  )
+proc_mle_loop<-function(  pheY, pheX, pheT, f.obj, fn_mle, mle_extra_par, parin, fn_init_par, fn_rand_par, options=list(min.optim.success=5, max.optim.failure=100)  )
 {
-	h0<-list( value=Inf, par=parin );
 	control <- list(maxit = 50000, reltol=1e-8);
+	h0      <- list( value=Inf, par=parin );
 
-	init.loop <- 1
+	init.optim <- 1
 	while( is.infinite(h0$value) )
 	{
 		try( h0 <- optim( parin, fn_mle, extra_par=mle_extra_par,
@@ -332,33 +401,30 @@ proc_mle_loop<-function(  pheY, pheX, pheT, f.obj, fn_mle, mle_extra_par, parin,
 			reset_seed();
 			parin <- fn_init_par( pheY, pheX, pheT, f.obj );
 
-			init.loop <- init.loop + 1;
-			if(init.loop > 100) return( list(error=T, par=NA, value=NA) );
+			init.optim <- init.optim + 1;
+			if(init.optim > 100) return( list(error=T, par=NA, value=NA) );
 
 			next;
 		}
+
+		reset_seed();
 	}
 
-	if(.RR("debug")) cat( "X[0]", h0$value, h0$par, "\n");
+	if(.RR("debug")) cat( "MLE[0]", h0$value, h0$par, "\n");
 
 	parin0 <- h0$par;
-	loop <- 1;
-	unfit <- 0;
-	h2.better <-NULL;
-	loop.optim <-1;
+	n.optim.failure <- 0;
+	n.optim.success <- 0;
 
-	min.fit<-Inf;
-
-	while ( loop < options$n.loop )
+	while ( n.optim.failure < options$max.optim.failure && n.optim.success < options$min.optim.success )
 	{
-		h2 <- NA;
 		parinx<- fn_rand_par( pheY, pheX, pheT, f.obj, parin0 );
-
-		loop.optim <- loop.optim+1;
+		h2 <- NULL;
 		try( h2 <- optim( parinx, fn_mle, extra_par=mle_extra_par,
-				method = ifelse(loop.optim%%2==1, "Nelder-Mead", "BFGS"), control=control ), .RR("try.silent", FALSE)  );
+				method = ifelse((n.optim.failure+n.optim.success)%%2==1, "Nelder-Mead", "BFGS"),
+				control=control ), .RR("try.silent", FALSE)  );
 
-		if (class(h2)=="try-error" || any(is.na(h2)) || (h2$convergence !=0)  )
+		if (is.null(h2) || class(h2)=="try-error" || any(is.na(h2)) || (h2$convergence !=0)  )
 		{
 			if ( is.list(h2) && h2$convergence == 1)
 			{
@@ -369,57 +435,21 @@ proc_mle_loop<-function(  pheY, pheX, pheT, f.obj, fn_mle, mle_extra_par, parin,
 					control$reltol <- control$reltol*2;
 				}
 			}
-
-			if(loop.optim>100)
-			{
-				loop.optim <- 0;
-				loop <- loop+1;
-
-				if (is.infinite(h0$value) && n.loop - loop< 2 )
-					n.loop <- n.loop + 1;
-			}
-
-			reset_seed();
-			next;
+			n.optim.failure <- n.optim.failure+1;
 		}
 		else
 		{
-			uc <- check_fittness( pheY, pheX, pheT, f.obj, h2$par )
-			if ( !uc$fit )
-			{
-				if (uc$over0.05<min.fit)
-				{
-					parin0    <- h2$par;
-					min.fit <- uc$over0.05;
-				}
+			if( h2$value < h0$value)
+				h0 <- h2;
 
-				reset_seed();
-				next;
-			}
-
-			if(.RR("debug")) cat( "MU(L", loop, ")", uc$over0.05, "/", h2$value, h2$par, "\n");
-
-			if ( h2$value < h0$value && h2$value>0 ) h0 <- h2;
-			if ( h2$value >0 && h0$value<0 ) h0 <- h2;
-
-			parin0 <- h0$par;
-			min.fit <- Inf;
-
-			if (is.infinite(h0$value) && n.loop - loop< 2 )
-				n.loop2 <- n.loop2 + 1;
+			n.optim.success <- n.optim.success + 1;
 		}
-
-		loop.optim <- 0;
-		loop <- loop+1;
+		##temprary
+		reset_seed();
 	}
 
-	if(.RR("debug")) cat( "X[F]", h0$value, h0$par, "\n");
-
-	uc <- check_fittness( pheY, pheX, pheT, f.obj, h0$par );
-	if( uc$fit && is.finite(h0$value) )
-		return(list(error=F, par=h0$par, value=h0$value))
-	else
-		return(list(error=T, par=NA, value=NA));
+	if(.RR("debug")) cat( "MLE[F]", h0$value, h0$par, "\n");
+	return(list(error=F, par=h0$par, value=h0$value))
 }
 
 check_fittness<-function( pheY, pheX, pheT, f.obj, parin )
@@ -441,14 +471,15 @@ if(NCOL(y_resd)==1) browser();
 	return(list(fit = ifelse( py.05 > 1, F, T), over0.05=py.05) );
 }
 
-fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL )
+fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL, options=options )
 {
 	cat(" Searching curve type ......\n" );
 
 	obj.curves <- list();
 	if(curve.type=="auto" || curve.type=="" || is.null(curve.type) )
 	{
-		for ( i in 1:fg_get_curve_count()) obj.curves[[i]] <- fg.getCurve( i );
+		for ( i in 1:fg_get_curve_count())
+			obj.curves[[i]] <- fg.getCurve( i );
 	}
 	else
 	{
@@ -463,9 +494,9 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL 
 	for ( obj.curve in obj.curves)
 	{
 		cat( "* [", index<-index+1, "/", length(obj.curves), "] try curve: ", obj.curve@type, "\n" );
-		r <- proc_est_curve( pheY, pheX, pheT, obj.curve )
+		r <- proc_est_curve( pheY, pheX, pheT, obj.curve, options=options )
 		if( r$error )
-			warning("Can not estimate the parameters of mean vector according to the curve function[ curve.type=", obj.curve@type, "]" )
+			warning("Can't estimate the parameters of mean vector according to the curve function[ curve.type=", obj.curve@type, "]" )
 		else
 		{
 			r$type <- obj.curve@type;
@@ -506,8 +537,8 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL 
 
 	if(!is.null(file.plot.pdf)) dev.off();
 
-
-	est.summary = data.frame(type = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$type);     }) ),
+	if(length(est.curve)>0)
+		est.summary = data.frame(type = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$type);     }) ),
 							 parm = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$par.count);}) ),
 							 AIC  = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$AIC);      }) ),
 							 AICc = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$AICc);     }) ),
@@ -515,7 +546,12 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL 
 							 SSE  = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$SSE);      }) ),
 							 MSE  = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$MSE);      }) ),
 							 RMSE = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$RMSE);     }) ),
-							 R2   = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$R2);       }) ) );
+							 R2   = unlist( lapply(1:length(est.curve), function(i){return(est.curve[[i]]$R2);       }) ) )
+	else
+	{
+		est.summary = NULL;
+		stop("Failed to do curve fitting.\n");
+	}
 
 	## use AIC to determine the best curve type.
 	cat("  Curve Fitting Summary:\n");
@@ -524,11 +560,10 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL 
 	options(width=old.width$width)
 
 	fit.idx <- which.min( est.summary[,3] );
-	return(list(error=F, type=est.curve[[fit.idx]]$type, y.resd=est.curve[[fit.idx]]$y.resd, par = est.curve[[fit.idx]]$par, summary=est.summary));
-
+	return(list(error=F, type=est.curve[[fit.idx]]$type, y.resd=est.curve[[fit.idx]]$y.resd, par = est.curve[[fit.idx]]$par, summary=est.summary, est.curve=est.curve) );
 }
 
-fg_fit_covar<-function( pheY, pheX, pheT, y.resd, obj.curve, covariance.type="auto")
+fg_fit_covar<-function( pheY, pheX, pheT, y.resd, obj.curve, covariance.type="auto", options=NULL)
 {
 	cat(" Searching covariance matrix .......\n" );
 
@@ -549,9 +584,9 @@ fg_fit_covar<-function( pheY, pheX, pheT, y.resd, obj.curve, covariance.type="au
 	{
 		cat(" *[", index, "/", fg_get_covar_count(), "]: try covariance matrix: ", obj.covar@type, "\n" );
 
-		r.est <- proc_est_covar( y.resd, NULL, pheT, obj.curve, obj.covar );
+		r.est <- proc_est_covar( y.resd, NULL, pheT, obj.curve, obj.covar, options = options );
 		if( r.est$error )
-			warning("Can not estimate the parameters of covariance matrix according to the covariance function[ covariance.type=", obj.covar@type, "]" )
+			warning("Can't estimate the parameters of covariance structure according to the covariance function[ covariance.type=", obj.covar@type, "]" )
 		else
 		{
 			r.est$type <- obj.covar@type;

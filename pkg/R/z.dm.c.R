@@ -29,3 +29,8 @@ setGeneric("get_matrix",
 	def = function( object, par, times, options=list() ){
 		standardGeneric("get_matrix");
 	})
+
+setGeneric("get_gradient",
+	def = function( object, par, times, options=list() ){
+		standardGeneric("get_gradient");
+	})

@@ -12,50 +12,121 @@
 fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, par0=NULL, par1=NULL, par2=NULL, par.covar=NULL, par.X=NULL,
 		phe.missing=0.03, snp.missing=0.03, sig.pos=NULL, plink.format=FALSE, file.prefix=NULL )
 {
-	check_n_obs( n.obs );
-	check_n_snp( n.snp );
-	check_curve_type( curve.type );
-	check_covariance_type( covariance.type );
-	check_time_points( time.points );
+	## check 'curve.type'
+	if ( missing(curve.type) || is.null(curve.type) )
+		stop("No curve type is specified in the paramater 'curve.type'.")
+	else
+		if( is.character(curve.type) && length(curve.type) > 1 )
+			stop( paste( "'curve.type' should be a string indicating curve type." ) );
 
-	if(!missing(par0) && !is.null(par0) ) check_par_qq( par0 );
-	if(!missing(par1) && !is.null(par1) ) check_par_Qq( par1 );
-	if(!missing(par2) && !is.null(par2) ) check_par_QQ( par2 );
-	if(!missing(par.covar) && !is.null(par.covar)) check_par_covar( par.covar );
-	if(!missing(par.X)  && !is.null(par.X) ) check_par_X( par.X );
+	## check 'covariance.type'
+	if ( missing(covariance.type) || is.null(covariance.type) )
+		stop("No covariance type is specified in the paramater 'covariance.type'.")
+	else
+		if( is.character(covariance.type) && length(covariance.type) > 1 )
+			stop( paste( "'covariance.type' should be a string indicating covariance type." ) );
 
-	if ( !missing(file.prefix) || is.null(file.prefix)) check_file_data( file.prefix );
-	if ( !missing(sig.pos)  || is.null(sig.pos)) check_sig_pos( sig.pos );
-	
-	if (is.null(sig.pos))
+	## check 'n.obs'
+	if ( missing(n.obs) || is.null(n.obs) )
+		stop("Individual count is not specified in the paramater 'n.obs'.")
+	else
+		if ( !(is.numeric( n.obs ) && length(n.obs)) )
+			stop("Not integer in parameter 'n.obs'.");
+
+	## check 'n.snp'
+	if ( missing(n.snp) || is.null(n.snp) )
+		stop("SNP count is not specified in the paramater 'n.snp'.")
+	else
+		if ( !(is.numeric( n.snp ) && length(n.snp)) )
+			stop("Not integer in parameter 'n.snp'.");
+
+	## check 'time.points'
+	if ( missing(time.points) || is.null(time.points) )
+		stop("Time points are not specified in the paramater 'time.points'.")
+	else
 	{
-		sig.pos <- round( runif(1, n.snp*0.25, n.snp*0.75) );
-		cat(" * A significant SNP is randomly specified to location(", sig.pos, ")\n" );
+		if ( !(is.numeric( time.points ) && length(time.points)) )
+			stop("Not integer in parameter 'time.points'.");
+			
+		if(length(time.points)==1)	
+			time.points <- 1:time.points
 	}
 	
+	## check 'par.X'
+	if( !missing(par.X)  && !is.null(par.X) )
+		if( !all(is.numeric(par.X)) )
+			stop( paste( "Covariate paramater should be numeric values." ) );
+
+	## check 'file.prefix'
+	if ( !missing(file.prefix) && !is.null(file.prefix))
+		if( !is.character(file.prefix) || length(file.prefix)>1 )
+			stop( paste( "'file.prefix' should be a string." ) );
+
 	if(plink.format && (missing(file.prefix) || is.null(file.prefix)))
 		stop("'file.prefix' is NULL")
 
+	## check 'curve.type'
 	if( class(curve.type)=="fgwas.curve")
 		fg_curve <- curve.type
 	else
 		fg_curve <- fg.getCurve( curve.type );
 
-	if( missing(par0) || is.null(par0) || missing(par1) || is.null(par1) || missing(par2) || is.null(par2) )
+	simu_parm <- get_simu_param( fg_curve, time.points );
+	simu_len <- NCOL(simu_parm);
+
+	## check 'par0'
+	if( missing(par0) || is.null(par0))
+		par0 <- simu_parm[1,]
+	else
 	{
-		simu_parm <- get_simu_param( fg_curve, time.points );
-		par0 <- simu_parm[1,];
-		par1 <- simu_parm[2,];
-		par2 <- simu_parm[3,];
+		if( !( all(is.numeric(par0)) && length(par0)==simu_len) )
+			stop( paste( "Curve paramater should be", simu_len, "numeric values." ) );
 	}
 
+	## check 'par1'
+	if( missing(par1) || is.null(par1))
+		par1 <- simu_parm[2,]
+	else
+	{
+		if( !( all(is.numeric(par1)) && length(par1)==simu_len) )
+			stop( paste( "Curve paramater should be", simu_len, "numeric values." ) );
+	}
+
+	## check 'par2'
+	if( missing(par2) || is.null(par2))
+		par2 <- simu_parm[3,]
+	else
+	{
+		if( !( all(is.numeric(par2)) && length(par2)==simu_len) )
+			stop( paste( "Curve paramater should be", simu_len, "numeric values." ) );
+	}
+
+	## check 'covariance.type'
 	if(class(covariance.type)=="fgwas.covar")
 		fg_covar <- covariance.type
 	else
 		fg_covar <- fg.getCovariance( covariance.type );
 
+	## check 'par.covar'
 	if(missing(par.covar) || is.null(par.covar) )
-		par.covar <- get_simu_param(fg_covar, fg_covar, time.points);
+		par.covar <- get_simu_param(fg_covar, fg_covar, time.points)
+	else
+	{
+		if( !( all(is.numeric(par.covar)) && length(par.covar)==simu_len) )
+			stop( paste( "Covariance paramater should be", simu_len, "numeric numbers." ) );
+	}
+
+	## check 'sig.pos'
+	if ( missing(sig.pos) || is.null(sig.pos))
+	{
+		sig.pos <- round( runif(1, n.snp*0.25, n.snp*0.75) );
+		cat(" * A significant SNP is randomly specified to location(", sig.pos, ")\n" );
+	}
+	else
+	{
+		if ( !(is.numeric( sig.pos ) && length(sig.pos)) )
+			stop("Not integer in parameter 'n.snp'.");
+	}
 
 	fg.obj <- proc_dat_simu( n.obs, n.snp, par.X, par0, par1, par2, par.covar, fg_curve, fg_covar, time.points, sig.pos, snp.missing, phe.missing );
 
@@ -71,7 +142,7 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 			write.csv(data.frame(ID = fg.obj$obj.phe$ids, fg.obj$obj.phe$pheX), file = fg.obj$obj.phe$file.pheX, quote=F, row.names=F )
 		else
 			fg.obj$obj.phe$file.pheX=NULL;
-			
+
 		if ( !plink.format )
 		{
 			file.gen.dat  <- paste(file.prefix, ".geno.tab", sep="");
@@ -100,7 +171,7 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 proc_dat_simu<-function( n.obs, n.snp, par.X, par0, par1, par2, par.covar, f.curve, f.covar, times, sig.idx, snp.missing, phe.missing )
 {
 	obj.gen <- list();
-	obj.phe <- list(options=list(), params=list());
+	obj.phe <- list(options=list(), params=list(), intercept=F);
 
 	#generate SNPs
 	tmp.matrix <- proc_simu_geno( n.obs, n.snp, sig.idx, prob.miss = snp.missing )
@@ -117,7 +188,7 @@ proc_dat_simu<-function( n.obs, n.snp, par.X, par0, par1, par2, par.covar, f.cur
 			n.ind.used     = n.obs,
 			ids.used       = colnames(tmp.matrix),
 			file.simple.snp= "",
-			rawdata        = data.frame(tmp.snpinfo , tmp.matrix), 
+			rawdata        = data.frame(tmp.snpinfo , tmp.matrix),
 			snpdata        = list(snp.info=tmp.snpinfo , snp.mat=tmp.matrix) );
 
 	pheX <- NULL;
@@ -171,8 +242,8 @@ proc_dat_simu<-function( n.obs, n.snp, par.X, par0, par1, par2, par.covar, f.cur
 	d.g1 <- get_gencode(tmp.matrix[1,],  tmp.snpinfo[1,])
 	d.g2 <- get_gencode(tmp.matrix[2,],  tmp.snpinfo[2,])
 
-cat("COR(g, g1)=", cor(d.g, d.g1), "\n");
-cat("COR(g, g2)=", cor(d.g, d.g2), "\n");
+if(.RR("debug")) cat("COR(g, g1)=", cor(d.g, d.g1), "\n");
+if(.RR("debug")) cat("COR(g, g2)=", cor(d.g, d.g2), "\n");
 
 	sim.covar <- get_matrix( f.covar, par.covar,times );
 	for (i in 1:n.obs)
@@ -199,7 +270,7 @@ cat("COR(g, g2)=", cor(d.g, d.g2), "\n");
 
 	fg.obj <- list(obj.gen=obj.gen, obj.phe=obj.phe, error=F);
 
-	cat("Data simulation is done![Sig=", sig.idx, "]\n");
+	cat(" Data simulation is done![Sig=", sig.idx, "]\n");
 
 	return(fg.obj);
 }

@@ -35,7 +35,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 	pheX = obj.phe$pheX;
 	pheT = obj.phe$pheT;
 
-	intercept <- ifelse ( !is.null(obj.phe$params), obj.phe$params$intercept, FALSE);
+	intercept <- ifelse ( !is.null(obj.phe$intercept), obj.phe$intercept, FALSE);
 
 	if(!is.null(pheX))
 	{
@@ -95,10 +95,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 
 	}, mc.cores = ncores );
 
-	if(require(data.table))
-		ret <- as.data.frame(rbindlist( ret ) )
-	else
-		ret <- as.data.frame(do.call("rbind", ret ) );
+	ret <- as.data.frame(do.call("rbind", ret ) );
 
 	colnames(ret) <- c("INDEX", "NAME","CHR", "POS", "Allel1", "Allel2", "MAF", "NMISS", "pv","p.min","p.join",paste("p", 0:order, sep="_"));
 	rownames(ret) <- ret$NAME;

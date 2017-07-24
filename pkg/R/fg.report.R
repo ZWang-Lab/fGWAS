@@ -191,7 +191,6 @@ proc_report_sig<-function( dat, sig.05, sig.01=NA )
 
 fg_report<-function( obj.scan, pdf.file=NULL, options=list())
 {
-browser();
 	if (is.null(pdf.file))
 		pdf.file <- tempfile(pattern=obj.scan$obj.phe$params$file.phe.long, fileext=".PDF");
 
@@ -226,19 +225,19 @@ browser();
 	#	proc_report_perm(dat, r.perm) ;
 	#}
 
-	if( !is.null( r.perm) && !is.null( r.snpscan) )
-	{
-		r.sig <- fg_detect_sig(dat, r.snpscan, r.perm)
+	#if( !is.null( r.perm) && !is.null( r.snpscan) )
+	#{
+	#	r.sig <- fg_detect_sig(obj.scan$dat, r.snpscan, r.perm)
+	#
+	#	Report.AddHeadline( "Significant SNP", level=1 );
+	#	proc_report_sig( obj.scan$dat, r.sig$sig.05, r.sig$sig.01 ) ;
+	#}
 
-		Report.AddHeadline( "Significant SNP", level=1 );
-		proc_report_sig( dat, r.sig$sig.05, r.sig$sig.01 ) ;
-	}
-
-	if( is.null( r.perm) && !is.null( r.snpscan) )
-	{
-		Report.AddHeadline( "Top SNP", level=1 );
-		proc_report_topn(dat, r.snpscan) ;
-	}
+	#if( is.null( r.perm) && !is.null( r.snpscan) )
+	#{
+	#	Report.AddHeadline( "Top SNP", level=1 );
+	#	proc_report_topn( obj.scan$obj.phe, r.snpscan) ;
+	#}
 
 	Report.Output( pdf.file );
 }

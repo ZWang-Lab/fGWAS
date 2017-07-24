@@ -1,55 +1,35 @@
 \name{summary.fgwas.phe.obj}
 \alias{summary.fgwas.phe.obj}
 
-\title{Summary of the data object}
+\title{Summarizing phenotype object.}
 
 \description{ 
-  Summarize information for the data object.
+  Summarizing phenotype object.
 } 
 
 \usage{ \method{summary}{fgwas.phe.obj}( object, ... ) }
 
 \arguments{
-\item{object}{a data object return by \code{\link{fg.simulate}} or \code{\link{fg.load.phenotype}} }
+\item{object}{a phenotype object returned by \code{\link{fg.load.phenotype}} or \code{obj.phe} in the \code{\link{fg.simulate}}}
 \item{...}{additional arguments affecting the summary produced.}
 }
 
 \value{
-No return values, only output the summary information on the R console.
+This function returns an extend table containing the covariate data , the longtudinal curve data  and the measured times. \cr
+
 }
 
 \details{
-
-The data object is described in \code{\link{fg.load.phenotype}}.
-
-The following example demonstrates summary command for a data object.
-
-\preformatted{
-Data set for FunMap model:
-------------------------------------
-          Date: 2010-03-19 03:49:36
-          Model: Logistic Curve
-          Cross: F2
-    Pheno. file: simu.pheno.LC.F2
-     Geno. file: simu.geno.LC.F2
-     Maker file: simu.marker.LC.F2
-    Sample size: 100       
-   Sample times: 7         
-   Marker count: 6         
-          LC  a: 19.83678  
-              b: 8.96370   
-              r: 0.47202   
-            rho: 0.75430   
-         sigma2: 0.58849   
-------------------------------------
-
+None
 }
-
-}
-
 
 \examples{
-#check the codes in fg.phenotype() or FM2.load.phenotype()
+
+r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+r$obj.phe;
+ext_phe <- summary(r$obj.phe);
+head(ext_phe);
+
 }
 
 \keyword{Data}
