@@ -10,7 +10,7 @@ Loading genotype data from PLINK data set.
 fg.load.plink(file.plink.bed, file.plink.bim, file.plink.fam, 
     plink.command = NULL, 
     chr = NULL, 
-    options = list())
+    options = list(verbose=F))
 }
 \arguments{
   \item{file.plink.bed}{string, the name of PLINK bed file, containing the packed binary SNP genotype data}
@@ -61,6 +61,14 @@ The following conents are exported by \code{\link[=print.fgwas.gen.obj]{print}} 
 
 }
 \examples{
+
+objx <- fg.simulate( "Logistic", "SAD1", 2000, 800, 1:6, phe.missing=0.05, snp.missing=0.05, sig.pos=301, plink.format=TRUE, file.prefix = "test1.fgwas" );
+
+obj.gen <- fg.load.plink("test1.fgwas.geno.bed", "test1.fgwas.geno.bim", "test1.fgwas.geno.fam" );
+
+obj.gen;
+
+
 }
 \keyword{ Data }
 

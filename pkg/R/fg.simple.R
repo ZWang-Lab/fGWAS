@@ -11,11 +11,11 @@ create.simple.obj  <- function( file.simple.snp, options )
 
 	tb.gen <- read.table( objref$file.simple.snp, header=T );
 	objref$n.snp <- NROW(tb.gen)
-	objref$n.ind.count <- NCOL(tb.gen)-5
-	objref$idsused <- colnames(tb.gen)[-c(1:5)];
-	objref$n.ind.used <- length(objref$idsused);
+	objref$n.ind.total <- NCOL(tb.gen)-5
+	objref$n.ind.used <- NCOL(tb.gen)-5
+	objref$ids.used <- colnames(tb.gen)[-c(1:5)];
 
-	load_simple_snp(objref);
+	load_simple_snp(objref, options$verbose);
 
 	return(objref);
 }
@@ -40,13 +40,14 @@ simple.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F  )
 		allel.info <- objref$snpdata$snp.info[ snp.idx, , drop=F];
 	}
 
+	##BB/AB/AA/A./B.==>2/1/0/NA
 	covert_geno <- function( allel.info, allel.geno)
 	{
 		snpB <- as.character(unlist(allel.info[5]));
 		snpA <- as.character(unlist(allel.info[4]));
-		QQ2<- paste(snpB, snpB, sep="");
-		qq0<- paste(snpA, snpA, sep="");
-		Qq1<- c(paste(snpA, snpB, sep=""), paste( snpB, snpA, sep="") ) ;
+		QQ2 <- paste(snpB, snpB, sep="");
+		qq0 <- paste(snpA, snpA, sep="");
+		Qq1 <- c(paste(snpA, snpB, sep=""), paste( snpB, snpA, sep="") ) ;
 
 		d.g <- rep( NA, length(allel.geno) );
 		d.g[which(allel.geno == QQ2)]<-2;
@@ -59,11 +60,20 @@ simple.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F  )
 
 		return(d.g);
 	}
-
-	snpmat <- do.call( "cbind", lapply(1:NROW(allel.mat), function(i){
+	
+	## if data element is AA/AB/BB
+	if(is.character(allel.mat[1,1]) || is.factor(allel.mat[1,1]) )
+	{
+		snpmat <- do.call( "cbind", lapply(1:NROW(allel.mat), function(i){
 		return( covert_geno ( allel.info[i,], as.character(unlist(allel.mat[i,])) ) );
-	}));
-
+		}));
+	}
+	## if data element is 0/1/2/NA
+	else
+	{
+		snpmat <- t(allel.mat);
+	}
+	
 	rownames(snpmat) <- colnames(allel.mat);
 	colnames(snpmat) <- rownames(allel.mat);
 
@@ -123,33 +133,36 @@ simple.get.snpindex <- function( objref, snp.names )
 
 
 #scaffoldId, Loci, RefBase, AltBase, P1, P2, P3,....
-load_simple_snp<-function( objref )
+load_simple_snp<-function( objref, verbose=TRUE )
 {
 	if(objref$file.simple.snp != "" )
 		tb.gen <- read.table( objref$file.simple.snp, header=T)
 	else
 		tb.gen <- objref$rawdata;
-		
-	cat("gen.table[", dim(tb.gen), "]\n");
+
+	if(verbose)
+		cat("gen.table[", dim(tb.gen), "]\n");
 
 	snp_info <- tb.gen[, c(1:5)]
 	snp_mat  <- tb.gen[, -c(1:5)]
 	rownames(snp_info) <- snp_info[,1];
-	objref$snpdata$snp_info <- snp_info
+	objref$snpdata$snp.info <- snp_info
 
 	ids.idx <- match( objref$ids.used, colnames(snp_mat) );
-	objref$snpdata$snp_mat <- snp_mat[, ids.idx];
+	objref$snpdata$snp.mat <- snp_mat[, ids.idx];
 }
 
 fg_load_simple<-function( file.simple.snp, options )
 {
-	cat( "[ Loading Simple ] \n");
-	cat( " Checking the parameters ......\n");
-
 	if ( missing(file.simple.snp) )
 		stop("! file.simple.snp must be assigned with the valid file name..");
 
-	cat("* SIMPLE SNP File = ",  file.simple.snp, "\n");
+	if(options$verbose)
+	{
+		cat( "[ Loading Simple ] \n");
+		cat( " Checking the parameters ......\n");
+		cat("* SIMPLE SNP File = ",  file.simple.snp, "\n");
+	}
 
 	if(!file.exists( file.simple.snp))
 		stop("Failed to open Simple data files.");
@@ -160,7 +173,7 @@ fg_load_simple<-function( file.simple.snp, options )
 
 	ret <- list( reader=obj.gen, options=options, params=params );
 	ret$n.snp <- obj.gen$n.snp
-	ret$n.ind.total <- obj.gen$n.ind.count
+	ret$n.ind.total <- obj.gen$n.ind.total
 	ret$n.ind.used <- obj.gen$n.ind.used
 	class(ret) <- "fgwas.gen.obj";
 

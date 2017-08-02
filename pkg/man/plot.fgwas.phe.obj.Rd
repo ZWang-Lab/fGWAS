@@ -7,12 +7,13 @@
   Ploting the longitudinal curves.
 } 
 
-\usage{ \method{plot}{fgwas.phe.obj}(x, y, ..., file.pdf = NULL) }
+\usage{ \method{plot}{fgwas.phe.obj}(x, y, ..., curve.fitting = T, file.pdf = NULL) }
 
 \arguments{
 \item{x}{a phenotype object return by \code{\link{fg.load.phenotype}} or \code{\link{fg.simulate}} }
 \item{y}{required parameter in the generic plot function, not used.}
 \item{...}{additional arguments affecting the summary produced.}
+\item{curve.fitting}{...}
 \item{file.pdf}{string indicating the output pdf file name.}
 }
 

@@ -146,15 +146,16 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 		if ( !plink.format )
 		{
 			file.gen.dat  <- paste(file.prefix, ".geno.tab", sep="");
-			write.table( data.frame(fg.obj$obj.gen$reader$get_snpinfo( NULL ),
-									fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=T ) ),
-							file=file.gen.dat, quote=F, row.names=F, col.names=T, sep="\t" );
+			tb.gen <- data.frame(fg.obj$obj.gen$reader$get_snpinfo( NULL ),
+								 fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=T )$snpmat );
+			colnames(tb.gen) <- c(colnames(tb.gen), rownames(fg.obj$obj.phe$file.pheX) );					 
+			write.table( tb.gen, file=file.gen.dat, quote=F, row.names=F, col.names=T, sep="\t" );
 
 			fg.obj$obj.gen$files = list(file.gen.dat);
 		}
 		else
 		{
-			snp.mat <- fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=F)
+			snp.mat <- fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
 			snp.info <- fg.obj$obj.gen$reader$get_snpinfo(NULL );
 			r <- convert_simpe_to_plink( data.frame(snp.info[,c(2,1)], 0, snp.info[,c(3:5)]),  snp.mat, paste(file.prefix, ".geno", sep="") );
 

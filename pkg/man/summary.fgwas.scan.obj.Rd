@@ -39,7 +39,7 @@ Below lists all columns for the analysis with curve 'Legendre2'  and covariance 
 
 }
 \examples{
-r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7, sig.pos=190 );
 obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, covariance.type="AR1", method="fast");
 tb <- summary(obj.scan);
 head(tb);

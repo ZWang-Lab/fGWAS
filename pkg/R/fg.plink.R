@@ -46,10 +46,7 @@
 
 fg_load_plink<-function(file.plink.bed, file.plink.bim, file.plink.fam, plink.command=NULL, chr=NULL, options )
 {
-	cat( "[ Loading PLINK ] \n");
-	cat( "Checking the parameters ......\n");
-
-	default_options <- list( force.split=TRUE, verbose=TRUE);
+	default_options <- list( force.split=TRUE, verbose=FALSE);
 	default_options[names(options)] <- options;
 	options <- default_options;
 
@@ -59,21 +56,26 @@ fg_load_plink<-function(file.plink.bed, file.plink.bim, file.plink.fam, plink.co
 	if ( !(is.logical(options$force.split) && length(options$force.split)==1 ) )
 		stop("! The parameter of force.split should be a logical value(TRUE or FALSE).");
 
-	cat("* PLINK BED File = ",  file.plink.bed, "\n");
-	cat("* PLINK BIM File = ",  file.plink.bim, "\n");
-	cat("* PLINK FAM File = ",  file.plink.fam, "\n");
-	cat("* Chromosome     = ",  chr, "\n");
-	cat("* PLINK Command = ",   plink.command, "\n");
-	cat("* Force Split by PLINK Command = ", options$force.split, "\n")
+	if(options$verbose)
+	{
+		cat( "[ Loading PLINK ] \n");
+		cat( "Checking the parameters ......\n");
+
+		cat("* PLINK BED File = ",  file.plink.bed, "\n");
+		cat("* PLINK BIM File = ",  file.plink.bim, "\n");
+		cat("* PLINK FAM File = ",  file.plink.fam, "\n");
+		cat("* Chromosome     = ",  chr, "\n");
+		cat("* PLINK Command = ",   plink.command, "\n");
+		cat("* Force Split by PLINK Command = ", options$force.split, "\n")
+	}
 
 
-	chk <- check_plink_file(file.plink.bed, file.plink.bim, file.plink.fam);
+	chk <- check_plink_file(file.plink.bed, file.plink.bim, file.plink.fam, options$verbose);
 	if(chk$error)
-		stop("Failed to check PLINK data files.");
+		stop("! Failed to check PLINK data files.");
 
 	obj.gen <- list();
-	obj.gen$reader <- create.plink.obj ( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chromosome=chr);
-
+	obj.gen$reader <- create.plink.obj ( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chromosome=chr, verbose=options$verbose);
 
 	obj.gen$n.snp  <- obj.gen$reader$n.snp;
     obj.gen$n.ind.total <- obj.gen$reader$n.ind.total;
@@ -91,17 +93,19 @@ fg_load_plink<-function(file.plink.bed, file.plink.bim, file.plink.fam, plink.co
 
 }
 
-check_plink_file<-function( file.plink.bed, file.plink.bim, file.plink.fam )
+check_plink_file<-function( file.plink.bed, file.plink.bim, file.plink.fam, verbose=FALSE )
 {
-	cat("Checking PLINK file......\n");
-	cat("* BED file =", file.plink.bed, "\n");
-	cat("* BIM file =", file.plink.bim, "\n");
-	cat("* FAM file =", file.plink.fam, "\n");
+	if(verbose)
+	{
+		cat("Checking PLINK file......\n");
+		cat("* BED file =", file.plink.bed, "\n");
+		cat("* BIM file =", file.plink.bim, "\n");
+		cat("* FAM file =", file.plink.fam, "\n");
+	}
 
 	bigdata  <- FALSE;
 	error <- FALSE;
 
-	library(snpStats);
 	snp.mat <- try( read.plink( file.plink.bed,  file.plink.bim, file.plink.fam) );
 	if(class(snp.mat)=="try-error")
 	{
@@ -118,8 +122,11 @@ check_plink_file<-function( file.plink.bed, file.plink.bim, file.plink.fam )
 		n.idv <- NROW(tb.fam);
 		n.snp <- NROW(tb.bim);
 
-		cat("* Individuals =", n.idv, "SNPs=", n.snp, "\n")
-		cat("* PLINK testing successfully.\n")
+		if(verbose)
+		{
+			cat("* Individuals =", n.idv, "SNPs=", n.snp, "\n")
+			cat("* PLINK testing successfully.\n")
+		}
 		return(list(error=F, bigdata=bigdata, family=tb.fam[,2]));
 	}
 	else
@@ -128,7 +135,7 @@ check_plink_file<-function( file.plink.bed, file.plink.bim, file.plink.fam )
 }
 
 
-create.plink.obj  <- function( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chromosome=NULL )
+create.plink.obj  <- function( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chromosome=NULL, verbose=FALSE )
 {
 	if ( missing( file.plink.bed) || missing(file.plink.bim) || missing(file.plink.fam) )
 		stop("! file.plink.bed, file.plink.bim and file.plink.fam must be assigned with the valid values.");
@@ -152,19 +159,21 @@ create.plink.obj  <- function( file.plink.bed, file.plink.bim, file.plink.fam, p
 		return(NULL);
 	}
 
-	plink.checkFiles( objref );
+	plink.checkFiles( objref, verbose );
 
 	return(objref);
 }
 
-plink.checkFiles <- function( refobj )
+plink.checkFiles <- function( refobj, verbose=FALSE )
 {
-	cat( "Checking PLINK files ......\n");
-
-	cat("* PLINK BED File = ",  refobj$file.plink.bed, "\n");
-	cat("* PLINK BIM File = ",  refobj$file.plink.bim, "\n");
-	cat("* PLINK FAM File = ",  refobj$file.plink.fam, "\n")
-	cat("* PLINK Command = ",   refobj$plink.command, "\n")
+	if(verbose)
+	{
+		cat( "Checking PLINK files ......\n");
+		cat("* PLINK BED File = ",  refobj$file.plink.bed, "\n");
+		cat("* PLINK BIM File = ",  refobj$file.plink.bim, "\n");
+		cat("* PLINK FAM File = ",  refobj$file.plink.fam, "\n")
+		cat("* PLINK Command = ",   refobj$plink.command, "\n")
+	}
 
 	if( all( file.exists( refobj$file.plink.bed,  refobj$file.plink.bim, refobj$file.plink.fam ) ) )
 	{
@@ -183,7 +192,7 @@ plink.checkFiles <- function( refobj )
 		refobj$ids.used     <- as.character(refobj$snpdata$plink.fam[,2])
 	}
 	else
-		stop("Plink files can not be found!");
+		stop("PLInK files can not be found!");
 }
 
 plink.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F )
@@ -452,19 +461,19 @@ convert_simpe_to_plink <- function( snp.info, snp.mat, snp.file.base )
 {
 	chromosome <- snp.info[,1];
 	position <- snp.info[,2];
-
-	snpmat <- snp.mat$snpmat
+	
+	# snp,mat : 0/1/2/NA
 	# PLINK raw data: 1/2/3==> AA,AB,BB, 0==>NA
-	snpmat <- t(snpmat + 1);
-	snpmat[is.na(snpmat)] <- 0;
+	snp.mat <- t(snp.mat + 1);
+	snp.mat[is.na(snp.mat)] <- 0;
 
-	sub.name <- colnames(snpmat);
-	snp.name <- rownames(snpmat);
+	sub.name <- colnames(snp.mat);
+	snp.name <- rownames(snp.mat);
 
 	###snps
-	dim.snps <- dim(snpmat);
+	dim.snps <- dim(snp.mat);
 
-	snps <- as.raw( as.matrix(snpmat ) );
+	snps <- as.raw( as.matrix(snp.mat ) );
 	snps <- array(snps, dim=dim.snps);
 	colnames(snps) <- sub.name;
 	rownames(snps) <- snp.name;

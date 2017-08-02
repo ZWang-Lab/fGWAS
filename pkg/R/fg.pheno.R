@@ -11,12 +11,15 @@
 # Format 3:
 # shareid, TIME1, TIME2, ...
 
-check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
+check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time, verbose=FALSE)
 {
 	err.info <- "Error!";
-	cat("Checking phenotype file......\n");
-	cat("* PHE.LONG =", file.phe.long , "\n");
-
+	if(verbose)
+	{
+		cat("Checking phenotype file......\n");
+		cat("* PHE.LONG =", file.phe.long , "\n");
+	}
+	
 	if(!file.exists(file.phe.long))
 		return(list(error=T, err.info=paste("Longitudinal file is not found, file=",file.phe.long, sep="") ) );
 
@@ -27,16 +30,20 @@ check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
 		return(list(error=T, err.info=err.info));
 	}
 	else{
-		cat("* Individuals =", NROW(phe.long), "\n");
-		cat("* Times =", NCOL(phe.long), "\n");
-		cat("* Mean =",  colMeans(phe.long, na.rm=T), "\n");
-		cat("* SD =",    colSds(phe.long, na.rm=T),"\n");
+		if(verbose)
+		{
+			cat("* Individuals =", NROW(phe.long), "\n");
+			cat("* Times =", NCOL(phe.long), "\n");
+			cat("* Mean =",  colMeans(phe.long, na.rm=T), "\n");
+			cat("* SD =",    colSds(phe.long, na.rm=T),"\n");
 
-		cat("  First 5 Items:\n");
-		show(head(phe.long, n=5));
+			cat("  First 5 Items:\n");
+			show(head(phe.long, n=5));
+		}
 	}
 
-	cat("* PHE.TIME =", file.phe.time , "\n");
+	if(verbose) cat("* PHE.TIME =", file.phe.time , "\n");
+	
 	phe.time <- NULL;
 	if(!is.null(file.phe.time)  && !is.na(file.phe.time) )
 	{
@@ -51,12 +58,15 @@ check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
 		}
 		else
 		{
-			cat("* Individuals =", NROW(phe.time), "\n");
-			cat("* Times =", NCOL(phe.time), "\n");
-			cat("* Mean =",  colMeans(phe.time, na.rm=T), "\n");
-			cat("* SD =",    colSds(phe.time, na.rm=T),"\n");
-			cat("  First 5 Items:\n");
-			show(head(phe.time, n=5));
+			if(verbose)
+			{
+				cat("* Individuals =", NROW(phe.time), "\n");
+				cat("* Times =", NCOL(phe.time), "\n");
+				cat("* Mean =",  colMeans(phe.time, na.rm=T), "\n");
+				cat("* SD =",    colSds(phe.time, na.rm=T),"\n");
+				cat("  First 5 Items:\n");
+				show(head(phe.time, n=5));
+			}
 		}
 
 		idx.inter <- intersect( rownames(phe.long), rownames(phe.time) );
@@ -67,9 +77,9 @@ check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
 		}
 	}
 
-	cat("Checking covariate file......\n");
-
-	cat("* COV.FILE =", file.phe.cov , "\n");
+	if(verbose) cat("Checking covariate file......\n");
+	if(verbose) cat("* COV.FILE =", file.phe.cov , "\n");
+	
 	if(!is.null(file.phe.cov) && !is.na(file.phe.cov) )
 	{
 		if(!file.exists(file.phe.cov))
@@ -82,12 +92,15 @@ check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
 			return(list(error=T, err.info=err.info));
 		}
 		else{
-			cat("* Individuals =", NROW(phe.cov), "\n");
-			cat("* Covariate =", NCOL(phe.cov), "\n");
-			cat("* Mean =",  colMeans(phe.cov, na.rm=T), "\n");
-			cat("* SD =",    colSds(phe.cov, na.rm=T), "\n");
-			cat("  First 5 Items:\n");
-			show(head(phe.cov, n=5));
+			if(verbose) 
+			{
+				cat("* Individuals =", NROW(phe.cov), "\n");
+				cat("* Covariate =", NCOL(phe.cov), "\n");
+				cat("* Mean =",  colMeans(phe.cov, na.rm=T), "\n");
+				cat("* SD =",    colSds(phe.cov, na.rm=T), "\n");
+				cat("  First 5 Items:\n");
+				show(head(phe.cov, n=5));
+			}
 		}
 
 		y.ncov <- NCOL(phe.cov);
@@ -106,22 +119,24 @@ check_pheno_file<-function( file.phe.long, file.phe.cov, file.phe.time)
 	{
 		cat("!", length(all.na), "IDs dont have non-missing data.\n" );
 		cat("! First 5 IDs:\n");
-		show( head( phe.long[all.na, ], n=5) );
+		show(head( phe.long[all.na, ], n=5) );
 	}
 
 	return(list(error=F))
 }
 
-show_options<-function(options)
-{
-##@ TODO
-
-}
-
+# currently, no option items are used in this funtion
 fg_load_phenotype <-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NULL, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, intercept=T, options=list())
 {
-	cat( "[ Loading Phenotype Data]\n");
-	cat( "Checking the parameters ......\n");
+	default_options <- list( max.optim.failure=100, min.optim.success=20, R2.loop=5, verbose=FALSE);
+	if (missing(options))
+		options <- default_options
+	else
+	{
+		options0 <- default_options;
+		options0[names(options)] <- options;
+		options <- options0;
+	}
 
 	if ( missing(file.phe.long) )
 		stop("! file.phe.long must be assigned with the valid file name.");
@@ -132,26 +147,21 @@ fg_load_phenotype <-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NU
 	if(missing(file.phe.time) || is.null(file.phe.time) || is.na(file.phe.time) ) file.phe.time <- NULL;
 	if(missing(intercept) || is.null(intercept) || is.na(intercept) ) intercept <- TRUE;
 
-	cat("* Phenotypic Data File = ",  file.phe.long, "\n");
-	cat("* Covariate Data File = ",  file.phe.cov, "\n");
-	cat("* Time Data File = ",  file.phe.time, "\n");
-	cat("* Curve Type = ",  curve.type, "\n")
-	cat("* Covariance Type = ",   covariance.type, "\n")
-	cat("* Intercept = ",   intercept, "\n")
-
-	default_options <- list();
-
-	if (missing(options))
-		options <- default_options
-	else
+	
+	if(options$verbose)
 	{
-		options0 <- default_options;
-		options0[names(options)] <- options;
-		options <- options0;
+		cat( "[ Loading Phenotype Data]\n");
+		cat( "Checking the parameters ......\n");
+		cat("* Phenotypic Data File = ",  file.phe.long, "\n");
+		cat("* Covariate Data File = ",  file.phe.cov, "\n");
+		cat("* Time Data File = ",  file.phe.time, "\n");
+		cat("* Curve Type = ",  curve.type, "\n")
+		cat("* Covariance Type = ",   covariance.type, "\n")
+		cat("* Intercept = ",   intercept, "\n")
 	}
-
-	cat( "Checking the optional items......\n");
-	show_options( options);
+	
+	#cat( "Checking the optional items......\n");
+	#show_options( options);
 
 	ret <- list();
 	ret$intercept <- intercept;
@@ -162,7 +172,7 @@ fg_load_phenotype <-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NU
 				curve.type     = curve.type,
 				covariance.type= covariance.type);
 
-	r.chk <- check_pheno_file( file.phe.long, file.phe.cov, file.phe.time );
+	r.chk <- check_pheno_file( file.phe.long, file.phe.cov, file.phe.time, options$verbose );
 	if(r.chk$error)
 		stop( r.chk$err.info );
 
@@ -181,14 +191,14 @@ fg_load_phenotype <-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NU
 	else
 		ret$pheX <- NULL;
 
-	##check the id consistent
+	## check the id consistent
 	ret$ids <- rownames(ret$pheY);
 
 	if(!is.null(ret$pheX) && is.data.frame(ret$pheX)) ret$pheX <- as.matrix(ret$pheX)
 	if(!is.null(ret$pheY) && is.data.frame(ret$pheY)) ret$pheY <- as.matrix(ret$pheY)
 	if(!is.null(ret$pheT) && is.data.frame(ret$pheT)) ret$pheT <- as.matrix(ret$pheT)
 
-	r.est  <- fg_dat_est( ret, curve.type,  covariance.type, file.plot.pdf );
+	r.est  <- fg_dat_est( ret, curve.type,  covariance.type, file.plot.pdf, options );
 	if( r.est$error )
 		stop(r.est$err.info)
 	else

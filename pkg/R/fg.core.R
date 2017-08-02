@@ -104,7 +104,7 @@ proc_mle<-function( index, snp.info, snp.vec, obj.phe, intercept=F, options=list
 		if(is.null(options$min.optim.success)) options$min.optim.success <- 2;
 		h1 <- proc_full_h1( obj.phe, pheY, pheX, pheT, snp.vec, options, h0 );
 	}
-	## default method = 'OPTIM-FGWAS'
+	## for default method = 'OPTIM-FGWAS'
 	else
 	{
 		if(is.null(options$min.optim.success)) options$min.optim.success <- 1;
@@ -166,7 +166,7 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 			parin.curve <- parin[1:n.par.curve];
 			parin.covar <- parin[-c(1:n.par.curve)];
 		}
-		
+
 		d <- rep(0, length(parin));
 		mat.cov <- get_matrix( obj.covariance, parin.covar, pheT );
 
@@ -174,7 +174,7 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 		{
 			nna.idx <- which(nna.vec == nna);
 			col.idx <- !is.na(pheY[nna.idx[1],]);
-			
+
 			mat.cov.nna <- mat.cov[col.idx, col.idx, drop=F];
 			mat.inverse <-  solve(mat.cov.nna);
 
@@ -204,10 +204,10 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 			d.cov <- c();
 			for(i in 1:length(parin.covar))
 				d.cov <- c(d.cov, sum(d.sigma * d.list[[i]]) );
-		
+
 			d <- d + c(d.X, d.curve, -1*d.cov);
 		}
-		
+
 		return(d);
 	}
 
@@ -248,14 +248,11 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 	n.par.curve <- get_param_info(obj.phe$obj.curve, pheT, options)$count;
 
 	## TEST gradient function
-	if(0)
+	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv"))
 	{
-	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) )
-	{
-		require(numDeriv);
 		parin <- c(obj.phe$est.curve$parX, obj.phe$est.curve$param, obj.phe$est.covar$param)
 		r0 <- gradient_h0_cov( parin, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, n.par.curve, options)
-		r1 <- grad( function(u) proc_h0_cov( u, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, n.par.curve, options), parin);
+		r1 <- numDeriv::grad( function(u) proc_h0_cov( u, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, n.par.curve, options), parin);
 		if ( max( abs(r0-r1) ) > 0.1 )
 		{
 			cat("Gradient=", r0, "\n");
@@ -265,8 +262,7 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 
 		.RW("graident.test", TRUE);
 	}
-	}
-	
+
 	h0.failure <- 0;
 	h0.best <- NULL;
 	while( h0.failure < 5 )
@@ -342,6 +338,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 		d <- rep(0, length(parin));
 		mat.cov <- get_matrix( obj.covar, parin.covar, pheT );
 
+		idx.k <- c();
 		for(nna in unique(nna.vec))
 		{
 			nna.idx <- which(nna.vec == nna);
@@ -354,7 +351,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 				Y.delt <- pheY[nna.idx, col.idx, drop=F]  -  matrix( rep(  pheX[nna.idx,,drop=F] %*% parin.X , sum(col.idx) ), byrow=F, ncol=sum(col.idx) )
 			else
 				Y.delt <- pheY[nna.idx, col.idx, drop=F];
-			
+
 			snp.vec.nna <- snp.vec[nna.idx];
 			parin.curve0 <- parin.curve;
 			for(k in 0:2)
@@ -364,7 +361,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 				{
 					parin.curveX <- parin.curve0[1:n.par.curve];
 					parin.curve0 <- parin.curve0[-c(1:n.par.curve)];
-	
+
 					Y.delt[snp.vec.nna==k, ] <- Y.delt[snp.vec.nna==k, , drop=F] - get_curve(obj.curve, parin.curveX, pheT[idx.k, col.idx, drop=F], options=options );
 				}
 			}
@@ -384,7 +381,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 				{
 					parin.curveX <- parin.curve0[1:n.par.curve];
 					parin.curve0 <- parin.curve0[-c(1:n.par.curve)];
-				
+
 					idx.k <- which(snp.vec==k & nna.vec == nna)
 					if (length(idx.k ) >0 )
 					{
@@ -392,9 +389,9 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 						for(i in 1:n.par.curve)
 							d.curve <- c(d.curve, sum( -1 * t(d.u[, snp.vec.nna==k, drop=F]) * d.list[[i]], na.rm=T) )
 					}
-					else 
+					else
 						d.curve <- c(d.curve, rep(0, n.par.curve) )
-				}		
+				}
 			}
 
 			Y.delt[is.na(Y.delt)] <- 0;
@@ -403,11 +400,11 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 			d.cov <- c();
 			for(i in 1:length(parin.covar))
 				d.cov <- c(d.cov, sum(d.sigma * d.list[[i]]) );
-				
+
 			d <- d + c(d.X, d.curve, -1*d.cov);
 		}
-		
-		
+
+
 		return(d);
 	}
 
@@ -431,6 +428,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 		else
 			Y.delt <- pheY;
 
+		idx.k <- c();
 		for(k in 0:2)
 		{
 			idx.k <- which(snp.vec==k)
@@ -459,12 +457,13 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 	parin.curve <- rep( h0$par[ (X.ncol+1):(X.ncol+n.par.curve) ], n.gentype );
 	parin.covar <- h0$par[ -(1:(X.ncol+n.par.curve)) ] ;
 
-	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE))
+	if(0)
 	{
-		require(numDeriv);
+	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv") )
+	{
 		parin <- c(parin.x, parin.curve*1.0, parin.covar);
 		r0 <- gradient_h1_cov( parin, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, snp.vec, n.par.curve, n.gentype, options)
-		r1 <- grad( function(u) proc_h1_cov( u, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, snp.vec, n.par.curve, n.gentype, options), parin);
+		r1 <- numDeriv::grad( function(u) proc_h1_cov( u, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, snp.vec, n.par.curve, n.gentype, options), parin);
 		if ( max( abs(r0-r1) ) > 0.1 )
 		{
 			cat("Gradient=", r0, "\n");
@@ -473,6 +472,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 		}
 
 		.RW("graident.test", TRUE);
+	}
 	}
 
 
@@ -509,6 +509,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 			parin <- h1.best$par;
 		}
 
+		idx.k <- c();
 		parin.curve <- parin[1:(n.par.curve * n.gentype)];
 		parin.covar <- parin[-c(1:(n.par.curve * n.gentype))];
 		par.fin <- c();
@@ -764,10 +765,6 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 
 	    if(sum.type==0)
 		{
-		    #Y.var <- colVars(Y.delt);
-		    #A <- NROW(Y.delt)*sum(log(sqrt(1/Y.var))) - 0.5*sum( rowSums((Y.delt^2)/matrix(Y.var, ncol=NCOL(Y.delt), nrow=NROW(Y.delt), byrow=T), na.rm=T) );
-		    #A <- -A;
-
 			Y.var <- colVars(Y.delt);
 		    Y.delt[is.na(Y.delt)] <- 0;
 		    pv <- try( dmvnorm( Y.delt, sigma=diag(Y.var), log=T) );
@@ -835,10 +832,6 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 		}
 	}
 
-	#nna.vec = get_non_na_number(pheY);
-	#h1.cm <- optim_BFGS( c(), c(), obj.phe$est.covar$param, proc_h1_cov, Y.delt = Y.delt, pheT = pheT, obj.covariance = obj.phe$obj.covar, nna.vec = nna.vec, options = options);
-    #h1.cm$par <- c( h1.curve$par, h1.cm$par);
-
 	parin.covar <- h0$par[-c(1:(length(obj.phe$est.curve$parX)+length(obj.phe$est.curve$param)))];
 	mat.cov <- get_matrix( obj.phe$obj.covar, parin.covar, pheT );
 	pv <- try( dmvnorm_fast( Y.delt, rep(0,NROW(mat.cov)), mat.cov, NULL, log=T), .RR("try.silent") );
@@ -875,13 +868,9 @@ proc_fast_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 	if( h0$value - h1x[[idx.min]]$value >= 0 )
 		return(h1x[[idx.min]]);
 
-	#h0 <- proc_full_h0( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL );
-
 	parX <- NULL;
 	if(length(obj.phe$est.curve$parX)>0)
 		parX <- h0$par[1:length(obj.phe$est.curve$parX)];
-
-	#h1 <- proc_fast_h1_comb( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, c(0,1,2), parX );
 
 	Y.delt <- matrix( NA, nrow=NROW(pheY), ncol=NCOL(pheY) );
 	if( is.null(pheX) )

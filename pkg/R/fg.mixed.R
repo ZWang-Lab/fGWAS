@@ -1,8 +1,8 @@
 fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 {
-	#library(lme4);
-	#library(nlme);
-
+	if( !requireNamespace("lme4") )
+		stop("Package lme4 is not installed, please use 'install.packages' command to install it.");
+	
 	F.fisher<-function(p)
 	{
 		return( pchisq( -2 * sum(log(p)), df = 2 * length(p), lower.tail=F) );
@@ -71,7 +71,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 		str.form.T = paste(str.form.T, " + I(T^", i, ") ", sep="");
 
 	reg.form <- as.formula( paste(str.form, "+", str.form.T, "+(", str.form.T, "|UID)", sep=""));
-	est1 <- try( do.call("lmer", args = list( reg.form, data=phe.one) ) );
+	est1 <- try( do.call("lme4::lmer", args = list( reg.form, data=phe.one) ) );
 	if(any(class(est1)=="try-error") )
 		list(error=TRUE, err.info="Failed to call lmer.")	;
 

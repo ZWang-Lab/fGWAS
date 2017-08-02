@@ -128,12 +128,8 @@ optim_BFGS<-function ( par.x, par.curve, par.covar, proc_fn, proc_gr=NULL, ... )
 				if( h0$convergence == 1)
 				{
 					control$maxit <- control$maxit*2;
-
-					if ( control$maxit > 500*4096 )
-					{
-						control$maxit <- 500*4096;
-						#control$reltol <- control$reltol*2;
-					}
+					if ( control$maxit > 500*512 )
+						control$maxit <- 500*512;
 				}
 				else
 					cat("optim, convergence=", h0$convergence, "", h0$message, "\n")
@@ -151,8 +147,9 @@ optim_BFGS<-function ( par.x, par.curve, par.covar, proc_fn, proc_gr=NULL, ... )
 		mle.control$optim.success <- mle.control$optim.success + 1;
 
 		reset_seed();
-		## avoid overflow
-		parinx <- c(par.x, par.curve*runif(length(par.curve), 0.999, 1.0 ), par.covar );
+		
+		## avoid overflow, fine tuning
+		parinx <- c(par.x, par.curve*runif(length(par.curve), 0.99, 1.0 ), par.covar );
 	}
 
 	return(h0.best);

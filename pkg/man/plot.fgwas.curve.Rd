@@ -7,7 +7,7 @@ Plot the curves associated with different genotype
 Plot the curves based on the parameter estimation in GWAS analysis for each genotype.
 }
 \usage{
-plot.fgwas.curve( object, snp.sub, file.pdf = NULL)
+plot.fgwas.curve( object, snp.sub, file.pdf)
 }
 \arguments{
   \item{object}{Result object returned by the \code{\link{fg.snpscan}}.}
@@ -22,8 +22,8 @@ No return values.
 }
 \examples{
 
-r <- fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
-obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, method="fast");
+r <- fg.simulate("Logistic", "AR1", 2000, 500, 1:7, sig.pos=250 );
+obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, method="fast", snp.sub=c(245:255) );
 tb.sig <- fg.select.sigsnp(obj.scan)
 plot.fgwas.curve( obj.scan, tb.sig$INDEX, file.pdf="test.plot.pdf");
 unlink("test.plot.pdf")

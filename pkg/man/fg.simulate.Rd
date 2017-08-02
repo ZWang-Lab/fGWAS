@@ -59,10 +59,20 @@ Y = X %*% \code{par.X} + curve_function ( \code{par2}, T ) + e if snp is aa \cr
 In above formula, X and snp are geneated randomly, curve_function is selected by the \code{curve.type}, the residuals \code{e} follow the multivarite normal distribution N(0, \code{covar} ), covar is built by the parameter \code{covariance.type} and \code{par.covar}.
 }
 
-\seealso{
-
-}
 \examples{
+
+obj1 <- fg.simulate( "Logistic", "AR1", 2000, 1000, 1:8, phe.missing=0.05, snp.missing=0.05, sig.pos=501, plink.format=FALSE, file.prefix = NULL );
+print(obj1$obj.gen);
+print(obj1$obj.phe);
+plot(obj1$obj.phe, curve.fitting=F);
+
+obj2 <- fg.simulate( "Logistic", "SAD1", 2000, 800, 1:6, phe.missing=0.05, snp.missing=0.05, sig.pos=301, plink.format=TRUE, file.prefix = "test.fgwas" );
+print(obj2$obj.gen);
+print(obj2$obj.phe);
+plot(obj2$obj.phe, curve.fitting=FALSE);
+
+#remove the phenotype files and PLINK files
+unlink(c("test.fgwas.geno.bed", "test.fgwas.geno.bed", "test.fgwas.geno.bed", "test.fgwas.pheT.csv", "test.fgwas.pheY.csv"));
 
 }
 \keyword{ Simulation }

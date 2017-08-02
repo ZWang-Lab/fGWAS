@@ -17,38 +17,63 @@ fg.simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 	return( obj );
 }
 
-#fg.load.cvf<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options=list())
-#{
-#	obj <- fg_load_cvf( file.plink.bed, file.plink.bim, file.plink.fam, plink.path, options );
-#	return( obj );
-#}
+#optional items: verbose=F
+#                forece.split=T
 
-fg.load.plink<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.command=NULL, chr=NULL, options=list())
+fg.load.plink<-function( file.plink.bed, file.plink.bim, file.plink.fam, plink.command=NULL, chr=NULL, options=list(verbose=F))
 {
-	obj <- fg_load_plink( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chr, options );
 	## dont load plink data, just plink data object
+	obj <- fg_load_plink( file.plink.bed, file.plink.bim, file.plink.fam, plink.command, chr, options );
+
 	return( obj );
 }
 
-fg.load.simple <- function( file.simple.snp, options=list())
+#optional items: verbose=F
+fg.load.simple <- function( file.simple.snp, options=list(verbose=F))
 {
 	obj <- fg_load_simple( file.simple.snp, options )
 	return( obj );
 }
 
-fg.load.phenotype<-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NULL, curve.type=NULL, covariance.type=NULL, file.plot.pdf=NULL, intercept=TRUE, options=list())
+#optional items: verbose=F
+#                min.optim.failure= 100
+#                min.optim.success= 20, 
+#                R2.loop = 5, 
+fg.load.phenotype<-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NULL, curve.type=NULL, covariance.type=NULL, file.plot.pdf=NULL, intercept=TRUE, options=list(verbose=F))
 {
+	if (!is.null(curve.type) && tolower(curve.type)!="auto" && is.null( fg.getCurve( curve.type ) ))
+		stop("No curve object specified by the parameter 'curve.type'. ")
+
+	if (!is.null(covariance.type) && tolower(covariance.type)!="auto" && is.null( fg.getCovariance( covariance.type ) ))
+		stop("No covariance object specified by the parameter 'covariance.type'. ")
+
 	obj <- fg_load_phenotype( file.phe.long, file.phe.cov, file.phe.time, curve.type, covariance.type, file.plot.pdf, intercept, options);
 	return( obj );
 }
 
-fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, options=list() )
+#optional items: verbose=F
+#                min.optim.failure= 100
+#                min.optim.success= 20, 
+#                R2.loop = 5, 
+fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, options=list(verbose=F) )
 {
+	if (!is.null(curve.type) && tolower(curve.type)!="auto" && is.null( fg.getCurve( curve.type ) ))
+		stop("No curve object specified by the parameter 'curve.type'. ")
+
+	if (!is.null(covariance.type) && tolower(covariance.type)!="auto" && is.null( fg.getCovariance( covariance.type ) ))
+		stop("No covariance object specified by the parameter 'covariance.type'. ")
+
 	obj <- fg_dat_est( obj.phe, curve.type, covariance.type, file.plot.pdf, options );
 	return( obj );
 }
 
-fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, snp.sub=NULL, options=list())
+#optional items: verbose=F
+#                ncores=1, 
+#                max.optim.failure=20 for fgwas and optim-fgwas  
+#                min.optim.success=2 for fgwas and optim-fgwas
+#                use.gradient=T for fgwas and optim-fgwas
+#                order=3 for mixed
+fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, snp.sub=NULL, options=list(verbose=F))
 {
 	if( ! toupper(method) %in% toupper(c("gls", "mixed", "fast", "fgwas", "optim-fgwas")))
 		stop("the parameter 'method' has 5 optional values: 'gls', 'mixed', 'fast', 'fgwas', 'optim-fgwas'. ")

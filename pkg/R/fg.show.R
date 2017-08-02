@@ -171,6 +171,7 @@ summary_fgwas_phe_obj <- function(object)
 # 'fgwas.scan.obj':
 #    $ params  : list
 #  ..$ options : list
+#  ..$ system.time : c()
 #  ..$ obj.gen : fgwas.gen.obj
 #  ..$ obj.phe : fgwas.phe.obj
 #  ..$ obj.perm: fgwas.perm.obj
@@ -233,6 +234,8 @@ summary_fgwas_phe_obj <- function(object)
 #         ..$ ..
 #         ..$ h1_cor1
 #         ..$ h1_cor2
+#         ..$ h0_R2
+#         ..$ h1_R2
 
 
 print_fgwas_scan_obj <- function(object)
@@ -365,7 +368,7 @@ plot_fgwas_phe_obj<-function( obj.phe, file.pdf, curve.fitting, ...)
 }
 
 
-plot_fgwas_curve<-function( object, snp.set, file.pdf )
+plot_fgwas_curve<-function( object, snp.sub, file.pdf )
 {
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");
@@ -376,10 +379,10 @@ plot_fgwas_curve<-function( object, snp.set, file.pdf )
 
 	pdf(file.pdf, width=6, height=5)
 
-	if( is.character(snp.set) )
-		snp.index <- match(snp.set, ret$NAME)
+	if( is.character( snp.sub) )
+		snp.index <- match(snp.sub, ret$NAME)
 	else
-		snp.index <- match(snp.set, ret$INDEX);
+		snp.index <- match(snp.sub, ret$INDEX);
 
 	snp.index <- snp.index [ !is.na(snp.index) ];
 	if(length(snp.index)<=0)
@@ -416,16 +419,16 @@ plot_fgwas_curve<-function( object, snp.set, file.pdf )
 }
 
 
-profile_fgwas_curve<-function( object, snp.set )
+profile_fgwas_curve<-function( object, snp.sub )
 {
 	method <- "";
 	if(!is.null(object$ret.fast)) { ret <- object$ret.fast$result; method<-"FAST"; }
 	if(!is.null(object$ret.fgwas)) { ret <- object$ret.fgwas$result; method<-"fGWAS"; }
 
-	if( is.character(snp.set) )
-		snp.index <- match(snp.set, ret$NAME)
+	if( is.character(snp.sub) )
+		snp.index <- match(snp.sub, ret$NAME)
 	else
-		snp.index <- match(snp.set, ret$INDEX);
+		snp.index <- match(snp.sub, ret$INDEX);
 
 	snp.index <- snp.index [ !is.na(snp.index) ];
 	if(length(snp.index)<=0)

@@ -8,7 +8,7 @@ check_ids<-function( obj.gen, obj.phe )
 	m.phe <- match( as.character(ids.phe), as.character(ids.gen)  );
 	if (length(which(is.na(m.phe))) > 0 )
 	{
-		cat("!", length(which(is.na(m.phe))), "IDs, can not be found in the PLINK file.\n" );
+		cat("!", length(which(is.na(m.phe))), "IDs, can not be found in the genotype file.\n" );
 		cat("! First 5 IDs:\n");
 		show( head(ids.gen[is.na(m.phe), ], n=5 ) );
 	}
@@ -38,7 +38,8 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	options <- default_options;
 	options$opt.method <- toupper(method);
 
-	cat( "[ SNP Scanning ] \n");
+	if(options$verbose)
+		cat( "[ SNP Scanning ] \n");
 
 	ids.com <- check_ids(obj.gen, obj.phe);
 	obj.phe <- select_individuals( obj.phe, ids.com );
@@ -51,10 +52,11 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 		if(is.null(covariance.type) && inherits( obj.phe$obj.covar, "fg.covariance.base") )
 			covariance.type <- obj.phe$obj.covar@type;
 		if( toupper(curve.type )!= toupper(obj.phe$obj.curve@type) || toupper(covariance.type) != toupper(obj.phe$obj.covar@type ) )
-			obj.phe <- fg_dat_est( obj.phe, curve.type, covariance.type );
+			obj.phe <- fg_dat_est( obj.phe, curve.type, covariance.type, options=list(verbose=optionsverbose) );
 	}
 
-	cat( "Genetic Effect Analysis by '", method,"' method......\n", sep="");
+	if(options$verbose)
+		cat( "Genetic Effect Analysis by '", method,"' method......\n", sep="");
 
 	ret <- list( error=FALSE );
 	if(is.null(snp.sub)) snp.sub <- 1:obj.gen$n.snp;
@@ -107,7 +109,6 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 
 	if( toupper(method )=="FGWAS" || toupper(method )=="OPTIM-FGWAS")
 	{
-		#r.cluster <- snp_cluster(obj.gen, snp.sub, dist=20 );
 		r.time <- system.time( r <- snpsnp_curve( obj.gen, obj.phe, snp.sub, options ) );
 		if (r$error)
 			stop(r$err.info);
@@ -118,6 +119,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	ret$obj.gen <- obj.gen;
 	ret$obj.phe <- obj.phe;
 	ret$system.time <- r.time;
+	ret$options <- options;
 
 	class(ret) <- "fgwas.scan.obj";
 
@@ -144,8 +146,6 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 			##requireNamespace("fGWAS");
 			require(fGWAS);
 			#r.mle<- try( proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options ), FALSE );
-
-#cat("SNP.k=", k, "\n");
 			##!! Tempraory
 			r.mle<- proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options );
 

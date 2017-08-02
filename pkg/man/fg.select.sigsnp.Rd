@@ -29,7 +29,5 @@ tb<-fg.select.sigsnp(obj.scan, sig.level=1e-10, "fdr")
 head(tb);
 show(tb$INDEX);
 show(tb$NAME);
-
-
 }
 \keyword{ Scanning }

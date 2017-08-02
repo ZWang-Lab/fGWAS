@@ -12,7 +12,7 @@ fg.load.phenotype(file.phe.long, file.phe.cov=NULL, file.phe.time=NULL,
     covariance.type = NULL, 
     file.plot.pdf = NULL, 
     intercept = TRUE,
-    options = list())
+    options = list(verbose=F))
 }
 \arguments{
   \item{file.phe.long}{string, indicating the file name of longitudinal curve for each individual.}
@@ -22,7 +22,7 @@ fg.load.phenotype(file.phe.long, file.phe.cov=NULL, file.phe.time=NULL,
   \item{covariance.type}{string, indicating the covariance structure type, available options are in the details. Default is 'auto' which means the package selects the covariance type using MLE.}
   \item{intercept}{boolean, indicating whether intercept is included in the model.}
   \item{file.plot.pdf}{string, indicating a PDF file name to illustrate the performance of curve fitting.}
-  \item{options}{list, not used currently }
+  \item{options}{list, including \code{max.optim.failure},  \code{min.optim.success},  \code{R2.loop}, and \code{verbose}}
 }
 \value{
 
@@ -144,5 +144,17 @@ The following conents are exported by \code{\link[=print.fgwas.phe.obj]{print}} 
 }
 
 \examples{
+
+objx <- fg.simulate( "Logistic", "SAD1", 2000, 800, 1:6, phe.missing=0.05, snp.missing=0.05, sig.pos=301, plink.format=TRUE, file.prefix = "test1.fgwas" );
+
+obj.phe <- fg.load.phenotype("test1.fgwas.pheY.csv", NULL, "test1.fgwas.pheT.csv", curve.type = "Logistic", "SAD1", file.plot.pdf = NULL, intercept = FALSE,  options = list(verbose=TRUE))
+
+obj.phe;
+
+plot( obj.phe, curve.fitting=FALSE, file.pdf = "test1.fgwas.phe.pdf");
+
+#Remove all test files
+unlink("test1.fgwas.*");
+
 }
 \keyword{ Data }

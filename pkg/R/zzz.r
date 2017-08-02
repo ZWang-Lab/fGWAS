@@ -20,7 +20,7 @@ msg <- function(...)
 
 	.RW("n.seed", 1);
 	.RW("debug", FALSE);
-	.RW("try.silent", FALSE);
+	.RW("try.silent", TRUE);
 	#.RW("loop.est", 10);
 	#.RW("loop.mle", 4);
 	.RW("mu.range.loop", 10);

@@ -1,6 +1,9 @@
 snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 {
-	default_options <- list( ncores=1, method="GLS", verbose=TRUE);
+	if( !requireNamespace("nlme") )
+		stop("Package nlme is not installed, please use 'install.packages' command to install it.");
+
+	default_options <- list( ncores=1, opt.method="GLS", verbose=TRUE);
 	default_options[names(options)] <- options;
 	options <- default_options;
 
@@ -9,7 +12,7 @@ snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 
 	if(options$verbose)
 	{
-		cat("* Method =", options$method, "\n" );
+		cat("* Method =", options$opt.method, "\n" );
 		cat("* SNP Count =", obj.gen$n.snp, "\n" );
 		cat("* Sample Count =", obj.phe$n.ind, "\n" );
 		cat("* Parallel CPU Count =", options$ncores, "\n" );
@@ -25,7 +28,6 @@ snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 
 	r.gls <- c();
 	snp.mat <- c();
-
 	r.fgwas <- c();
 	for(i in 1:length(snp.sect0))
 	{
@@ -92,7 +94,7 @@ gls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheZ, pheX=NULL, interc
 		cat("* H1 =", as.character(reg.str1), "\n" );
 	}
 
-	r0 <- try( gls( as.formula(reg.str0), phe.gls.mat, correlation = corAR1(form = ~ Z | ID ), method="ML" ) );
+	r0 <- try( nlme::gls( as.formula(reg.str0), phe.gls.mat, correlation = nlme::corAR1(form = ~ Z | ID ), method="ML" ) );
 	if(class(r0)=="try-error")
 	{
 		cat("! Failed to call gls() method.\n");
@@ -101,6 +103,8 @@ gls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheZ, pheX=NULL, interc
 
 	cpu.fun<-function( sect )
 	{
+		requireNamespace("nlme");
+
 		if( (sect-1)*n.percpu+1 > NROW(snp.mat) )
 			return(NULL);
 
@@ -133,8 +137,8 @@ gls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheZ, pheX=NULL, interc
 			na.row <- unique( which(is.na(gls.mat))%% NROW(gls.mat) );
 			if(length(na.row)>0) gls.mat <- gls.mat[-na.row,,drop=F];
 
-			r0 <- try( do.call("gls", args = list(reg.f0, gls.mat, correlation = corAR1(form = ~ Z | ID ), method="ML") ) );
-			r1 <- try( do.call("gls", args = list(reg.f1, gls.mat, correlation = corAR1(form = ~ Z | ID ), method="ML") ) );
+			r0 <- try( do.call("gls", args = list(reg.f0, gls.mat, correlation = nlme::corAR1(form = ~ Z | ID ), method="ML") ) );
+			r1 <- try( do.call("gls", args = list(reg.f1, gls.mat, correlation = nlme::corAR1(form = ~ Z | ID ), method="ML") ) );
 			if(any(class(r1)=="try-error") || any(class(r0)=="try-error") )
 			{
 				r.gls[i-range.fr+1, -c(2)] <- c( snp.idx[i], unlist(snp.mat[i,2:3]), length(snp.miss), maf,  NA, pv.max );
@@ -229,6 +233,8 @@ bls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheX = NULL, intercept=
 
 	cpu.fun<-function( sect )
 	{
+		requireNamespace("nlme");
+
 		if( (sect-1)*n.percpu+1 > NROW(snp.mat) )
 			return(NULL);
 

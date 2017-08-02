@@ -21,7 +21,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 		r.test <- fg_fit_curve( obj.phe$pheY, pheX, obj.phe$pheT, curve.type=curve.type, file.plot.pdf=file.plot.pdf, options=options );
 
 		if(r.test$error)
-			stop("? No curve is fitted to this data.\n");
+			stop("? No curve is fitted to this data.");
 
 		obj.phe$obj.curve <- fg.getCurve( r.test$type );
 		obj.phe$summary.curve <- r.test;
@@ -31,7 +31,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 	par.init <- if(!is.null(r.test)) r.test$par else NULL;
 	r <- proc_est_curve( obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve, par.init= par.init, options=options )
 	if( r$error )
-		stop("Can't estimate the parameters of mean vector according to the curve function" );
+		stop("? Can't estimate the parameters of mean vector according to the curve function" );
 
 	parX.len <- NCOL(pheX)
 	if(is.null(pheX)) parX.len <- 0;
@@ -58,7 +58,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 		r.test <- fg_fit_covar( obj.phe$pheY, pheX, obj.phe$pheT, r$y.resd, obj.phe$obj.curve, covariance.type, options=options );
 
 		if(r.test$error)
-			stop("? No covariance is fitted to this data.\n")
+			stop("? No covariance is fitted to this data.")
 		else
 		{
 			obj.phe$summary.covariance <- r.test;
@@ -72,7 +72,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 	options$min.optim.success <- 5;
 	r.est <- proc_est_covar( r$y.resd, NULL, obj.phe$pheT, obj.phe$obj.curve, obj.phe$obj.covar, options=options );
 	if ( r.est$error )
-		stop("Can't estimate the parameters of covariance structure according to the curve function" );
+		stop("? Can't estimate the parameters of covariance structure according to the curve function" );
 
 	obj.phe$est.covar<- list( type = obj.phe$obj.covar@type, param = r.est$par);
 	obj.phe$error <- F;
@@ -180,9 +180,6 @@ proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=N
 			else
 			{
 				par.curve <- get_init_curve_par( pheY, pheX, pheT, f.obj );
-				#pheX.len  <- 1 + NCOL(pheX)
-				#if( is.null(pheX) )  pheX.len <- 1;;
-				#par <- c( rep( mean(pheY, na.rm=T), pheX.len ),  par.curve );
 				return( par.curve * runif( length(par.curve) , 0.5, 1.5 ) );
 			}
 		}
@@ -248,10 +245,8 @@ if(.RR("debug")) cat( "MLE results for curve: R2=", R2, h0$value, h0$par, "\n");
 			y.resd <- fn_get_resd( pheY, pheX, pheT,  obj.curve, h0$par );
 			## The sum of the squared differences between each observation and its predicted value.
 			y.SSE <- sum(y.resd^2,na.rm=T) ;
-
 			##Gives the average of the squares of the errors of each value.
 			y.MSE <- y.SSE/length(which(!is.na(pheY)));
-
 			##The square root of the MSE that estimates the standard deviation of the random error.
 			y.RMSE <- sqrt(y.MSE)
 			## pramater count
@@ -444,7 +439,7 @@ proc_mle_loop<-function(  pheY, pheX, pheT, f.obj, fn_mle, mle_extra_par, parin,
 
 			n.optim.success <- n.optim.success + 1;
 		}
-		##temprary
+
 		reset_seed();
 	}
 
@@ -597,10 +592,10 @@ fg_fit_covar<-function( pheY, pheX, pheT, y.resd, obj.curve, covariance.type="au
 
 	if(length(est.covar)>=1)
 	{
-		est.summary = data.frame(type = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$type);     }) ),
-							 L    = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$logL[1]);      }) ),
-							 AIC  = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$AIC);      }) ),
-							 BIC  = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$BIC);      }) ) );
+		est.summary = data.frame(type = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$type); })),
+							 L    = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$logL[1]); })),
+							 AIC  = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$AIC); })),
+							 BIC  = unlist( lapply(1:length(est.covar), function(i){return(est.covar[[i]]$BIC); })));
 
 
 		cat("  Covariance Estimation Summary:\n");
