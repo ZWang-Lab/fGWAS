@@ -23,7 +23,7 @@ No return values, only output the significant SNPs or top SNPs on the R console.
 
 The result object is described in \code{\link{fg.snpscan}}.
 
-The following example demonstrates the output of print command for a result object.
+The following example demonstrates the output of \code{print} command for a result object.
 
 \preformatted{
 == Result from 'fGWAS' method ==
@@ -43,8 +43,11 @@ rs7876326  424440  rs7876326  23  23626268 0.470481928    18 3.074301e-13
 
 
 \examples{
+# data simulation
 r <- fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+# SNP scaning
 obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, method="fast");
+# print the top or significant SNPs.
 obj.scan;
 
 }

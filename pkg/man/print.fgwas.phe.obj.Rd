@@ -23,7 +23,7 @@ No return values, only output the brief information on the R console.
 
 The phenotype object is described in \code{\link{fg.load.phenotype}}.
 
-The following example demonstrates the output of summary command for a phenotype object.\cr
+The following example demonstrates the output of \code{print} command for a phenotype object.\cr
 
 \preformatted{
 == Phenotype Object in fGWAS ==
@@ -47,8 +47,9 @@ The following example demonstrates the output of summary command for a phenotype
 
 
 \examples{
-
+# data simulation
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+# print brief phenotype information
 r$obj.phe;
 
 

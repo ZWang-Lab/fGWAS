@@ -34,14 +34,23 @@ Below lists all columns for the analysis with curve 'Legendre2'  and covariance 
 [26] "L1"         "h1.X0"      "h1.X1"      "h1.X2"      "h1.X3"     
 [31] "h1.X4"      "h1.X5"      "h1.X6"      "h1.G0.u0"   "h1.G0.u1"  
 [36] "h1.G0.u2"   "h1.G1.u0"   "h1.G1.u1"   "h1.G1.u2"   "h1.G2.u0"  
-[41] "h1.G2.u1"   "h1.G2.u2"   "h1X.rho"    "h1X.sigma2"
+[41] "h1.G2.u1"   "h1.G2.u2"   "h1X.rho"    "h1X.sigma2" "h0.R2"
+[46] "h1.R2"
 }
 
 }
 \examples{
+
+# data simulation
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7, sig.pos=190 );
+
+# SNP scaning
 obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, covariance.type="AR1", method="fast");
+
+# summarize the result object
 tb <- summary(obj.scan);
+
+# show the summary table
 head(tb);
 
 

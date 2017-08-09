@@ -24,10 +24,16 @@ None
 }
 
 \examples{
-
+# data simulation
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+
+# print the brief information of the phenotype object
 r$obj.phe;
+
+# output the summary information
 ext_phe <- summary(r$obj.phe);
+
+# show the summary table
 head(ext_phe);
 
 }

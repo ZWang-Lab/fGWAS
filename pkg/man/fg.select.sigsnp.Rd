@@ -23,11 +23,18 @@ The function returns a sub-matrix including the significant SNPs.
 }
 \examples{
 
+# simulate the phenotype object and genotype object.
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+# call SNP scaning using 'fast' method 
 obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, covariance.type="AR1", method="fast");
+# select the significant SNPs from the result object
 tb<-fg.select.sigsnp(obj.scan, sig.level=1e-10, "fdr")
+
+# show 5 lines of significant SNP table
 head(tb);
+# show SNP indexes in significant SNP table 
 show(tb$INDEX);
+# show SNP names in significant SNP table 
 show(tb$NAME);
 }
 \keyword{ Scanning }

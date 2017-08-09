@@ -10,7 +10,7 @@
 \usage{ \method{print}{fgwas.gen.obj}( x, ..., useS4 = FALSE ) }
 
 \arguments{
-\item{x}{a data object returned by \code{\link{fg.load.plink}} or \code{\link{fg.load.simple}} }
+\item{x}{a genotype object returned by \code{\link{fg.load.plink}} or \code{\link{fg.load.simple}} }
 \item{...}{additional arguments affecting the summary produced.}
 \item{useS4}{an argument used to match showDefault function. Fixed as FALSE.}
 }
@@ -23,7 +23,7 @@ No return values, only output the brief information on the R console.
 
 The genotype object is described in \code{\link{fg.load.plink}} or \code{\link{fg.load.simple}}.
 
-The following example demonstrates the output of print command for a genotype object.\cr
+The following example demonstrates the output of \code{print} command for a genotype object.\cr
 
 \preformatted{
 
@@ -48,9 +48,11 @@ The following example demonstrates the output of print command for a genotype ob
 
 
 \examples{
-
+# data simulation
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+# call this function to print the genotype information
 r$obj.gen;
+# summarize the genotype object
 summary(r$obj.gen);
 
 }

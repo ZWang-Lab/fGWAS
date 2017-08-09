@@ -4,7 +4,7 @@
 \title{Summarizing genotype object}
 
 \description{ 
-  Print the summary information of the genotype object.
+  Printing the summary information of the genotype object.
 } 
 
 \usage{ \method{summary}{fgwas.gen.obj}( object, ... ) }
@@ -23,8 +23,11 @@ The genotype object is described in \code{\link{fg.load.plink}} or \code{\link{f
 }
 \examples{
 
+# data simulation
 r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7 );
+# print the brief information of gthe genotype object
 r$obj.gen;
+# output the sumamry information
 summary(r$obj.gen);
 
 }
