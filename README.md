@@ -24,7 +24,7 @@ The fGWAS package is aiming to identify significant SNPs that control longitudin
     
 > 1. R (http://www.r-project.org/)
     
-> 2. Package (minpack.lm)[https://cran.r-project.org/web/packages/minpack.lm/index.html], (snpStats)[http://bioconductor.org/packages/release/bioc/html/snpStats.html], mvtnorm, parallel (required in R >= 2.14.0 ).
+> 2. Package [minpack.lm](https://cran.r-project.org/web/packages/minpack.lm/index.html), [snpStats](http://bioconductor.org/packages/release/bioc/html/snpStats.html), mvtnorm, parallel (required in R >= 2.14.0 ).
 
 Please install the required R package before you install fGWAS package. After the  installation of the dependencies, please install the **fGWAS** as following steps.
 
