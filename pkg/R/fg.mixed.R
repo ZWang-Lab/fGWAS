@@ -1,8 +1,8 @@
 fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 {
-	if( !requireNamespace("lme4") )
+	if( !requireNamespace("lme4", quietly=T) )
 		stop("Package lme4 is not installed, please use 'install.packages' command to install it.");
-	
+
 	F.fisher<-function(p)
 	{
 		return( pchisq( -2 * sum(log(p)), df = 2 * length(p), lower.tail=F) );

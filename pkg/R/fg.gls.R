@@ -1,6 +1,6 @@
 snpscan_nocurve<-function(obj.gen, obj.phe, snp.idx=NULL, options=list() )
 {
-	if( !requireNamespace("nlme") )
+	if( !requireNamespace("nlme", quietly=T) )
 		stop("Package nlme is not installed, please use 'install.packages' command to install it.");
 
 	default_options <- list( ncores=1, opt.method="GLS", verbose=TRUE);

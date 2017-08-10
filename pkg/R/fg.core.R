@@ -248,7 +248,7 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 	n.par.curve <- get_param_info(obj.phe$obj.curve, pheT, options)$count;
 
 	## TEST gradient function
-	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv"))
+	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv", quietly=T))
 	{
 		parin <- c(obj.phe$est.curve$parX, obj.phe$est.curve$param, obj.phe$est.covar$param)
 		r0 <- gradient_h0_cov( parin, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, n.par.curve, options)
@@ -459,7 +459,7 @@ proc_full_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 
 	if(0)
 	{
-	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv") )
+	if ( !is.null(options$use.gradient) &&  options$use.gradient && !.RR("graident.test", FALSE) && requireNamespace("numDeriv", quietly=T) )
 	{
 		parin <- c(parin.x, parin.curve*1.0, parin.covar);
 		r0 <- gradient_h1_cov( parin, pheY, pheT, pheX, obj.phe$obj.curve, obj.phe$obj.covar, nna.vec, snp.vec, n.par.curve, n.gentype, options)
