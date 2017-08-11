@@ -26,7 +26,7 @@ The fGWAS package is aiming to identify significant SNPs that control longitudin
     
 > 2. Package [minpack.lm](https://cran.r-project.org/web/packages/minpack.lm/index.html), [snpStats](http://bioconductor.org/packages/release/bioc/html/snpStats.html), mvtnorm, parallel (required in R >= 2.14.0 ).
 
-Please install the required R package before you install fGWAS package. After the  installation of the dependencies, please install the **fGWAS** as following steps.
+Please install the required R packages before you install the fGWAS package. After the  installation of the dependencies, please install the **fGWAS** as following steps.
 
 ### Install fGWAS on LINUX or Mac OSX
 
@@ -71,7 +71,6 @@ r<-fg.simulate("Logistic", "AR1", 2000, 500, 1:7, sig.pos=250 );
 
 Call SNP scaning in a short range (245:255) using 'fgwas' method. 
 
-
 ```
 obj.scan <- fg.snpscan(r$obj.gen, r$obj.phe, method="fgwas", snp.sub=c(245:255) );
 obj.scan;
@@ -91,5 +90,3 @@ plot.fgwas.curve( obj2.scan, tb.sig$INDEX, file.pdf="temp.fwgas.obj2.curve.pdf")
 ```
 
 All functions and examples in the fGWAS are available in the manual (https://github.com/wzhy2000/fGWAS/blob/master/fGWAS-manual.pdf).
-
-
