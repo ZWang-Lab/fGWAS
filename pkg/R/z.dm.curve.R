@@ -76,6 +76,27 @@ fg.addCurve<-function()
 
 }
 
+get_mean_vector<-function(pheY, pheT)
+{
+	t.count <- length(unique(pheT));
+	if(t.count>=20)
+	{
+		t.min <- min(pheT, na.rm=T)
+		t.max <- max(pheT, na.rm=T)
+		pheT <- round((pheT - t.min)/(t.max-t.min)*20)/20*(t.max-t.min) + t.min;
+	}
+
+	t.all <- sort(unique(pheT));
+	y.all <- c();
+	for(t in t.all)
+	{
+		y.all <- c( y.all, mean(pheY[which(pheT==t)], na.rm=T) );
+	}
+
+	return(list(t=t.all, y=y.all));
+}
+
+
 ##-----------------------------------------------------------
 ## Logistic curve
 ##
@@ -106,7 +127,6 @@ log_get_param_info<-function(object, times, options=list())
 log_check_param<-function(object, par, times, options=list())
 {
 	return(TRUE);
-
 }
 
 log_get_simu_param<-function(object, times, options=list())
@@ -116,10 +136,32 @@ log_get_simu_param<-function(object, times, options=list())
 
 log_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	r.max <- max( pheY, na.rm=T );
-	r.min <- min( pheY, na.rm=T );
+	mc <- get_mean_vector(pheY, pheT);
+	m <- length(mc$t);
 
-	return( runif( 3, r.min, r.max) );
+	par <- c();
+	ls.i <- ls.max <- Inf;
+	a.rate <- mc$y[m]/mc$y[m-1];
+	for(i in 1:10)
+	{
+		par.a <- mc$y[m] * a.rate^i;
+		par.r <- try( (log(par.a/mc$y[1]-1) - log(par.a/mc$y[m]-1))/(mc$t[1]-mc$t[m]));
+		if(class(par.r)=="try-error" || is.infinite(par.r) )
+			next;
+
+		par.b <- (par.a / mc$y[m] -1)/exp(-par.r*mc$t[m]);
+
+		y.ls <- sum(abs(mc$y - par.a/(1+par.b*exp(-par.r*mc$t)))^2, na.rm=T);
+
+		if (y.ls < ls.max)
+		{
+			ls.i <- i;
+			ls.max <- y.ls;
+			par <- c(par.a, par.b, par.r);
+		}
+	}
+
+	return(par*runif(length(par),0.95, 1.05) );
 }
 
 ##-----------------------------------------------------------
@@ -198,10 +240,9 @@ log2_get_simu_param<-function(object, times, options=list())
 
 log2_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	r.max <- max( pheY, na.rm=T );
-	r.min <- min( pheY, na.rm=T );
-
-	return( runif( 6, r.min, r.max) );
+	par <- log_est_init_param(object, pheY, pheX, pheT, options)
+	par[1] <- par[1]/2;
+	return( c(par,par) );
 }
 
 ##-----------------------------------------------------------
@@ -270,15 +311,15 @@ abrk_check_param<-function(object, times, options=list())
 
 abrk_get_simu_param<-function(object, times, options=list())
 {
-	return( rbind( c(18.18, 9.98, 0.99), c(17.08, 9.78, 0.97), c(15.95, 9.88, 0.98)	) );
+	return( rbind( c(18.18, 9.98, 0.99, 2.6 ), c(17.08, 9.78, 0.97, 2.5), c(15.95, 9.88, 0.98, 2.4)	) );
 }
 
 abrk_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	r.max <- max( pheY, na.rm=T );
-	r.min <- min( pheY, na.rm=T );
+	par <- log_est_init_param(object, pheY, pheX, pheT, options)
+	par.k <- 2;
 
-	return( runif( 4, r.min, r.max) );
+	return( c(par, par.k) * runif( 4, 0.95, 1.05) );
 }
 
 ##-----------------------------------------------------------
@@ -348,7 +389,28 @@ pc_get_simu_param<-function(object, times, options=list())
 
 pc_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
-	return(c(min(pheY,na.rm=T), mean(as.matrix(pheY), na.rm=T), max(pheY,na.rm=T)));
+	mc <- get_mean_vector(pheY, pheT);
+	m <- length(mc$t);
+
+	par <- c();
+	ls.max <- Inf;
+	a.rate <- mc$y[m]/mc$y[m-1];
+	for(i in 1:10)
+	{
+		par.Emax <- mc$y[m]*a.rate^i;
+		par.E50 <- mc$y[which(mc$t==median(mc$t))];
+		par.E0 <- mc$y[m] - par.Emax*mc$t[m]/(par.E50 + mc$t[m] );
+
+		y.ls <- sum(abs(mc$y - par.E0 - par.Emax*mc$t/(par.E50+mc$t))^2, na.rm=T);
+		if (y.ls < ls.max)
+		{
+			ls.max <- y.ls;
+			par <- c( par.E0, par.E50, par.Emax);
+		}
+	}
+
+
+	return(par*runif(3, 0.95, 1.05))
 }
 
 ##-----------------------------------------------------------

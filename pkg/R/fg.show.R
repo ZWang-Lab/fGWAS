@@ -350,7 +350,7 @@ plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, ... )
 	invisible(file.pdf);
 }
 
-plot_fgwas_phe_obj<-function( obj.phe, file.pdf, curve.fitting, ...)
+plot_fgwas_phe_obj<-function( obj.phe, file.pdf=NULL, curve.fitting=FALSE, ...)
 {
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");

@@ -11,7 +11,7 @@ fg.load.simple( file.simple.snp, options=list(verbose=F))
 }
 \arguments{
   \item{file.simple.snp}{string, file name of SNP data table, the format is described in the details. }
-  \item{options}{List, only including \code{verbose}.}
+  \item{options}{list, only including the item \code{verbose}.}
 }
 \value{
 

@@ -22,7 +22,7 @@ fg.load.phenotype(file.phe.long, file.phe.cov=NULL, file.phe.time=NULL,
   \item{covariance.type}{string, indicating the covariance structure type, available options are in the details. Default is 'auto' which means the package selects the covariance type using MLE.}
   \item{intercept}{boolean, indicating whether intercept is included in the model.}
   \item{file.plot.pdf}{string, indicating a PDF file name to illustrate the performance of curve fitting.}
-  \item{options}{list, including \code{max.optim.failure},  \code{min.optim.success},  \code{R2.loop}, and \code{verbose}}
+  \item{options}{list, including \code{max.optim.failure},  \code{min.optim.success},  \code{R2.loop}, and \code{verbose}, default values are \code{max.optim.failure=100}, \code{min.optim.success=20}, \code{R2.loop=5}, \code{verbose=F}.}
 }
 \value{
 

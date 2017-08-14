@@ -1,4 +1,4 @@
-fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
+fg_mixed_scan<- function( obj.gen, obj.phe, degree=3, snp.idx = NULL, ncores=1 )
 {
 	if( !requireNamespace("lme4", quietly=T) )
 		stop("Package lme4 is not installed, please use 'install.packages' command to install it.");
@@ -10,8 +10,8 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 
 	Fast1 <- function( b.mat, snp.i )
 	{
-		p<-unlist(lapply(0:order, function(i){
-			if(order>=i)
+		p<-unlist(lapply(0:degree, function(i){
+			if(degree>=i)
 			{
 				data = data.frame(Y = b.mat[,i+1], SNP = factor(snp.i));
 				colnames(data) <- c("Y", "SNP");
@@ -67,7 +67,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 		str.form = paste( str.form,  paste("X", 1:NCOL(pheX), collapse="+", sep=""));
 
 	str.form.T = "1";
-	for(i in 1:order)
+	for(i in 1:degree)
 		str.form.T = paste(str.form.T, " + I(T^", i, ") ", sep="");
 
 	reg.form <- as.formula( paste(str.form, "+", str.form.T, "+(", str.form.T, "|UID)", sep=""));
@@ -77,7 +77,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 
 	est1.beta <- coef(est1)[[1]]
 	b0.mat <- eval(scale(est1.beta$"(Intercept)"));
-	for(i in 1:order)
+	for(i in 1:degree)
 		b0.mat <- cbind(b0.mat, eval(parse(text=paste("scale(est1.beta$\"I(T^", i, ")\")", sep="")) ) );
 
 	time <- seq(min(obj.phe$pheT, na.rm=T), max(obj.phe$pheT, na.rm=T), 0.1);
@@ -89,7 +89,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 		ret <- Fast1( b0.mat, snp.mat$snpmat);
 
 		y.pv <- cbind( Index=k, snp.info[1:5], MAF=snp.mat$MAF[1], NMISS=snp.mat$NMISS[1], p.fisher=ret[1], p.min=ret[2], p.join=ret[3]);
-		for(i in 0:order)
+		for(i in 0:degree)
 			y.pv <- cbind(y.pv, ret[3+i+1]);
 		return(y.pv);
 
@@ -97,7 +97,7 @@ fg_mixed_scan<- function( obj.gen, obj.phe, order=3, snp.idx = NULL, ncores=1 )
 
 	ret <- as.data.frame(do.call("rbind", ret ) );
 
-	colnames(ret) <- c("INDEX", "NAME","CHR", "POS", "Allel1", "Allel2", "MAF", "NMISS", "pv","p.min","p.join",paste("p", 0:order, sep="_"));
+	colnames(ret) <- c("INDEX", "NAME","CHR", "POS", "Allel1", "Allel2", "MAF", "NMISS", "pv","p.min","p.join",paste("p", 0:degree, sep="_"));
 	rownames(ret) <- ret$NAME;
 
 	return( list(lmer=est1, beta=b0.mat, result = ret, error=FALSE) );

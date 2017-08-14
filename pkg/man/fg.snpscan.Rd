@@ -21,7 +21,15 @@ fg.snpscan( fgwas.gen.obj, fgwas.phe.obj,
   \item{curve.type}{string, indicating the curve type used in the scaning process for the method "fast", "fgwas" and "optim-fast", instead of the original curve type in phenotype object. The full optional values are listed in \code{\link{fg.load.phenotype}}}
   \item{covariance.type}{string, indicating the type of covariance structure used in the scaning process for the method "fast", "fgwas" and "optim-fast", instead of the curve type in phenotype object. The full optional values are listed in \code{\link{fg.load.phenotype}}}
   \item{snp.sub}{vector of SNP index or SNP name, indicating the selected SNPs will be scanned, not the whole data set.}
-  \item{options}{list}
+  \item{options}{list, including \code{verbose}, \code{ncores}, \code{max.optim.failure}, \code{min.optim.success}, \code{use.gradient}, \code{degree}, default values are 
+\code{verbose=F},
+\code{ncores=1},
+\code{max.optim.failure=20}
+\code{min.optim.success=2}
+\code{use.gradient=FALSE}
+\code{degree=3}.
+  
+  }
 }
 \value{
 
@@ -106,6 +114,15 @@ If 'mixed' is used to scan the SNPs, the result is stored in \code{ret.mixed} wi
 }
 
 \details{
+
+The parallel computing is available in Lunix or Linux compatible OS using the optional \code{ncores} item. \pkg{fGWAS} uses the \pkg{snowfall} for the method \code{"gls"} and \pkg{parallel} for the method \code{"fast"}, \code{"fgwas"}, and \code{"optim-fgwas"}. \cr
+
+Due to the difficulty to estimate and provide initial parameters for the function \code{optim}, \pkg{fGWAS} sets the maximum optim failure time and minimum optim success time in the optional items. \cr
+
+For the method \code{"fgwas"} and \code{"optim-fgwas"}, \pkg{fGWAS} performs the MLE using the numerical derivation by default \code{use.gradient=FALSE}, If \code{use.gradient=TRUE}, the gradient function is provided and used in the MLE.
+
+For the method \code{mixed}, the default polynomial degree is 3, it can be customized with the optional item \code{degree}.
+
 
 }
 

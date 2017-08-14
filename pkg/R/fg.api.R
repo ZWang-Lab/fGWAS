@@ -36,9 +36,9 @@ fg.load.simple <- function( file.simple.snp, options=list(verbose=F))
 }
 
 #optional items: verbose=F
-#                min.optim.failure= 100
-#                min.optim.success= 20, 
-#                R2.loop = 5, 
+#                max.optim.failure= 100
+#                min.optim.success= 20,
+#                R2.loop = 5,
 fg.load.phenotype<-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NULL, curve.type=NULL, covariance.type=NULL, file.plot.pdf=NULL, intercept=TRUE, options=list(verbose=F))
 {
 	if (!is.null(curve.type) && tolower(curve.type)!="auto" && is.null( fg.getCurve( curve.type ) ))
@@ -53,8 +53,8 @@ fg.load.phenotype<-function( file.phe.long, file.phe.cov=NULL, file.phe.time=NUL
 
 #optional items: verbose=F
 #                min.optim.failure= 100
-#                min.optim.success= 20, 
-#                R2.loop = 5, 
+#                min.optim.success= 20,
+#                R2.loop = 5,
 fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", file.plot.pdf=NULL, options=list(verbose=F) )
 {
 	if (!is.null(curve.type) && tolower(curve.type)!="auto" && is.null( fg.getCurve( curve.type ) ))
@@ -68,11 +68,11 @@ fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", 
 }
 
 #optional items: verbose=F
-#                ncores=1, 
-#                max.optim.failure=20 for fgwas and optim-fgwas  
+#                ncores=1,
+#                max.optim.failure=20 for fgwas and optim-fgwas
 #                min.optim.success=2 for fgwas and optim-fgwas
 #                use.gradient=T for fgwas and optim-fgwas
-#                order=3 for mixed
+#                degree=3 for mixed
 fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, snp.sub=NULL, options=list(verbose=F))
 {
 	if( ! toupper(method) %in% toupper(c("gls", "mixed", "fast", "fgwas", "optim-fgwas")))

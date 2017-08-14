@@ -33,7 +33,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	if( class(obj.phe)!="fgwas.phe.obj" )
 		stop("The second paramater should be phenotype object.");
 
-	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, order=3, ncores=1, verbose=FALSE, use.gradient=T);
+	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T);
 	default_options[names(options)] <- options;
 	options <- default_options;
 	options$opt.method <- toupper(method);
@@ -82,7 +82,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 
 	if( toupper(method )=="MIXED")
 	{
-		r.time <- system.time( r <- fg_mixed_scan( obj.gen, obj.phe, snp.sub, order=options$order, ncores=options$ncores ) );
+		r.time <- system.time( r <- fg_mixed_scan( obj.gen, obj.phe, snp.sub, degree=options$degree, ncores=options$ncores ) );
 		if (r$error)
 			stop(r$err.info);
 

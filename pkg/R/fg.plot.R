@@ -663,11 +663,11 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 
 	get_est_vector<-function( pheY0, pheX0, pheT0, par_X, par_curve, ti)
 	{
-		if( !is.null(par_X) && length(par_X)>0 && !is.null(pheX0) ) 
+		if( !is.null(par_X) && length(par_X)>0 && !is.null(pheX0) )
 			X.cov <- matrix( pheX0 %*% par_X, ncol=1, byrow=T) %*% matrix(rep(1,NROW(ti)), nrow=1, byrow=T)
-		else	
+		else
 			X.cov <- matrix(rep(0,NROW(ti)), nrow=1, byrow=T);
-			
+
 		y.est <- get_curve( obj.phe$obj.curve, par_curve, ti, options=options )  + colMeans( X.cov, na.rm=T);
 
 		return(list(time=ti, value=y.est))
@@ -680,9 +680,9 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 	h0.mean <- h0.est <- h1A.mean <- h1A.est <- h1B.mean<- h1B.est <- h1C.mean<- h1C.est <- NULL
 
 	if( obj.phe$intercept )
-		if (is.null(pheX)) 
-			pheX <- matrix(1, nrow=NROW(pheY), ncol=1 ) 
-		else 
+		if (is.null(pheX))
+			pheX <- matrix(1, nrow=NROW(pheY), ncol=1 )
+		else
 			pheX <- cbind(1, pheX);
 
 	par_x_num <- ifelse( is.null( pheX ), 0 , NCOL( pheX ) )
@@ -694,7 +694,7 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 		h0.mean<- get_mean_vector( pheY, pheT ) ;
 		h0.est <- get_est_vector( pheY, pheX, pheT, if(is.null(pheX)) NULL else par_h0[1:par_x_num], par_h0[(par_x_num+1):(par_x_num+par_curve_num)], ti);
 	}
-	
+
 	snp0.idx <- snp1.idx <- snp2.idx <- NULL;
 	if(!is.null(snp.vec))
 	{
@@ -702,7 +702,7 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 		snp1.idx <- which(snp.vec==1);
 		snp2.idx <- which(snp.vec==2);
 	}
-	
+
 	if(!is.null(par_h1))
 	{
 		if(length(snp0.idx)>0)
@@ -723,19 +723,19 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 			h1C.est <- get_est_vector( pheY[snp2.idx,,drop=F], if(!is.null(pheX)) pheX[snp2.idx,,drop=F] else NULL, pheT[snp2.idx,,drop=F], par_h1[1:par_x_num], par_h1[(par_x_num+1+par_curve_num*2):(par_x_num+par_curve_num*3)], ti);
 		}
 	}
-	
+
 	gen.col <- c("pink", "khaki", "skyblue")
 	plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)),  xlab="Time", ylab="Phenotype", cex=0.75);
 		for(i in 1:NROW(pheY))
 			lines(pheT[i,], pheY[i,], col=ifelse( is.null(snp.vec), "gray", gen.col[snp.vec[i]+1]), lwd=0.2);
-	
+
 	if(!is.null(par_h0))
 	{
 		xlines(h0.mean$time, h0.mean$value, col="black", lwd=1, lty=11)
-		xlines(h0.est$time,  h0.est$value,  col="black", lwd=0.5)
 		points(h0.mean$time,  h0.mean$value,  col="black", pch=21, cex=h0.mean$count/NROW(pheY)*1.5);
+		xlines(h0.est$time,  h0.est$value,  col="blue", lwd=1.5)
 	}
-	
+
 	if(!is.null(par_h1))
 	{
 		if (length(snp0.idx)>0) xlines(h1A.mean$time, h1A.mean$value, col="red", lwd=0.8, lty=11)
@@ -747,15 +747,15 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 		if (length(snp2.idx)>0) xlines(h1C.mean$time, h1C.mean$value, col="blue", lwd=1, lty=11)
 		if (length(snp2.idx)>0) xlines(h1C.est$time, h1C.est$value, col="blue", lwd=0.8)
 	}
-	
+
 	if(!is.null(snp.vec))
 	{
 		legend("topleft", legend=c(length(snp0.idx), length(snp1.idx), length(snp2.idx)),
 			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
 		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
-	
+
 		text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
 	}
-	
+
 	return
 }

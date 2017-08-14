@@ -37,7 +37,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 	if(is.null(pheX)) parX.len <- 0;
 
 	cat(" Parameter range estimation ...... \n")
-	options$max.optim.failure <- 10; 
+	options$max.optim.failure <- 10;
 	options$min.optim.success <- 2;
 	range <- proc_est_curve_range(obj.phe$pheY, pheX, obj.phe$pheT, obj.phe$obj.curve, par.init = r$par, options=options);
 	obj.phe$est.curve <- list( type = obj.phe$obj.curve@type,
@@ -68,7 +68,7 @@ fg_dat_est<-function( obj.phe, curve.type="auto", covariance.type="auto", file.p
 
 	cat("  Covariance Type==> ", obj.phe$obj.covar@type, " <==\n");
 
-	options$max.optim.failure <- 50; 
+	options$max.optim.failure <- 50;
 	options$min.optim.success <- 5;
 	r.est <- proc_est_covar( r$y.resd, NULL, obj.phe$pheT, obj.phe$obj.curve, obj.phe$obj.covar, options=options );
 	if ( r.est$error )
@@ -485,10 +485,10 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL,
 	if(!is.null(file.plot.pdf)) pdf(file.plot.pdf);
 
 	est.curve <- list();
-	index = 0
+	index = 1
 	for ( obj.curve in obj.curves)
 	{
-		cat( "* [", index<-index+1, "/", length(obj.curves), "] try curve: ", obj.curve@type, "\n" );
+		cat( "* [", index, "/", length(obj.curves), "] try curve: ", obj.curve@type, "\n" );
 		r <- proc_est_curve( pheY, pheX, pheT, obj.curve, options=options )
 		if( r$error )
 			warning("Can't estimate the parameters of mean vector according to the curve function[ curve.type=", obj.curve@type, "]" )
@@ -496,38 +496,39 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL,
 		{
 			r$type <- obj.curve@type;
 			est.curve[[index]] <- r;
+			index<-index+1;
+
+			if(!is.null(file.plot.pdf))
+			{
+				plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)), main=r$type, xlab="Time", ylab="Phenotype");
+				for(i in 1:NROW(pheY))
+					lines(pheT[i,], pheY[i,], col="gray", lwd=0.2);
+
+				pheT_vec <- c(pheT)
+				pheY_vec <- c(pheY)
+				ti <- unique(c(pheT));
+				ti <- sort( ti [ !is.na(ti) ] );
+				y.mu <- rep(NA, length(ti));
+				for(i in 1:length(ti) )
+				   y.mu[i] <-  mean(pheY_vec[pheT_vec==ti[i]], na.rm=T);
+
+				lines(ti, y.mu, col="black", lty="22", lwd=1);
+
+				mu_X <- 0 ;
+				par_c <- r$par;
+				if ( !is.null(pheX) )
+				{
+				   par_X <- c( par_X, r$par[ 1:NCOL(pheX)]);
+				   par_c <- r$par[ -c(1:NCOL(pheX)) ]
+				   mu_X <- mean( pheX %*% par_X, na.rm=T );
+				}
+
+				ti <- seq( min(pheT, na.rm=T), max(pheT, na.rm=T), 1);
+				mu_gen <- get_curve( obj.curve, par_c, ti, options=list(max.time=max(pheT, na.rm=T), min.time=min(pheT, na.rm=T)))
+
+				lines(ti, mu_gen + mu_X, col="black", lwd=1.5);
+			}
 		}
-
-	    if(!is.null(file.plot.pdf))
-	    {
-            plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)), main=r$type, xlab="Time", ylab="Phenotype");
-            for(i in 1:NROW(pheY))
-            	lines(pheT[i,], pheY[i,], col="gray", lwd=0.2);
-
-            pheT_vec <- c(pheT)
-            pheY_vec <- c(pheY)
-	        ti <- unique(c(pheT));
-	        ti <- sort( ti [ !is.na(ti) ] );
-	        y.mu <- rep(NA, length(ti));
-	        for(i in 1:length(ti) )
-	           y.mu[i] <-  mean(pheY_vec[pheT_vec==ti[i]], na.rm=T);
-
-	        lines(ti, y.mu, col="black", lty="22", lwd=1);
-
-	        mu_X <- 0 ;
-	        par_c <- r$par;
-	        if ( !is.null(pheX) )
-	   	    {
-	   	       par_X <- c( par_X, r$par[ 1:NCOL(pheX)]);
-		       par_c <- r$par[ -c(1:NCOL(pheX)) ]
-		       mu_X <- mean( pheX %*% par_X, na.rm=T );
-		    }
-
-	        ti <- seq( min(pheT, na.rm=T), max(pheT, na.rm=T), 1);
-	        mu_gen <- get_curve( obj.curve, par_c, ti, options=list(max.time=max(pheT, na.rm=T), min.time=min(pheT, na.rm=T)))
-
-	        lines(ti, mu_gen + mu_X, col="black", lwd=1.5);
-	    }
 	}
 
 	if(!is.null(file.plot.pdf)) dev.off();

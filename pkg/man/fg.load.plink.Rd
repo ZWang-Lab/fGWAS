@@ -38,6 +38,8 @@ You can print summary information by the function \code{\link[=print.fgwas.gen.o
 
 \details{
 
+This fucntion try to avoid loading all genotype data in memory. The optional parameter \code{force.split} indicates to use the \code{plink.command} to split the genotype data accordingto chromose unit and then load the partial gentotype data gradually.    
+
 The following example show the contents exported by \code{\link[=print.fgwas.gen.obj]{print}} command. \cr
 
 \preformatted{
