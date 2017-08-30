@@ -14,9 +14,9 @@ The fGWAS package is aiming to identify significant SNPs that control longitudin
 
 ## Document
 
-> 1) Vignette (https://github.com/wzhy2000/fGWAS/blob/master/fGWAS-vignette-v0.2.pdf)
+> 1) Vignette (https://github.com/wzhy2000/fGWAS/blob/master/fgwas.vignette.pdf)
 
-> 2) Manual (https://github.com/wzhy2000/fGWAS/blob/master/fGWAS-manual.pdf)
+> 2) Manual (https://github.com/wzhy2000/fGWAS/blob/master/fgwas.manual.pdf)
 
 ## Installation Instructions:
 
@@ -89,4 +89,4 @@ tb.sig <- fg.select.sigsnp(obj2.scan, sig.level=0.001, pv.adjust = "bonferroni")
 plot.fgwas.curve( obj2.scan, tb.sig$INDEX, file.pdf="temp.fwgas.obj2.curve.pdf");
 ```
 
-All functions and examples in the fGWAS are available in the manual (https://github.com/wzhy2000/fGWAS/blob/master/fGWAS-manual.pdf).
+All functions and examples in the fGWAS are available in the manual (https://github.com/wzhy2000/fGWAS/blob/master/fgwas.manual.pdf).
