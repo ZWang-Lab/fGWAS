@@ -52,7 +52,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 		if(is.null(covariance.type) && inherits( obj.phe$obj.covar, "fg.covariance.base") )
 			covariance.type <- obj.phe$obj.covar@type;
 		if( toupper(curve.type )!= toupper(obj.phe$obj.curve@type) || toupper(covariance.type) != toupper(obj.phe$obj.covar@type ) )
-			obj.phe <- fg_dat_est( obj.phe, curve.type, covariance.type, options=list(verbose=optionsverbose) );
+			obj.phe <- fg_dat_est( obj.phe, curve.type, covariance.type, options=list(verbose=options$verbose) );
 	}
 
 	if(options$verbose)

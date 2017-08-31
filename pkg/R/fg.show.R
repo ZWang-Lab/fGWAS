@@ -373,6 +373,9 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf )
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");
 
+	if(is.null(object$obj.phe$intercept))
+		object$obj.phe$intercept <- FALSE;
+
 	method <- "";
 	if(!is.null(object$ret.fast)) { ret <- object$ret.fast$result; method<-"FAST"; }
 	if(!is.null(object$ret.fgwas)) { ret <- object$ret.fgwas$result; method<-"fGWAS"; }
