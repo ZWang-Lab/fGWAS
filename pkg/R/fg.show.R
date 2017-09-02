@@ -318,30 +318,30 @@ plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, ... )
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", tmpdir=getwd(), fileext=".pdf");
 
-	pdf(file.pdf)
+	pdf(file.pdf, width=7, height=4)
 
 	if(!is.null(object$ret.gls))
 	{
 		filter.man <- object$ret.gls$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, map.title="GLS" )
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.gls$result), map.title="GLS" )
 	}
 
 	if(!is.null(object$ret.mixed))
 	{
 		filter.man <-  object$ret.mixed$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, map.title="Mixed Model")
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.mixed$result), map.title="Mixed Model")
 	}
 
 	if(!is.null(object$ret.fast))
 	{
 		filter.man <- object$ret.fast$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, map.title="Fast fGWAS Model")
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.fast$result), map.title="Fast fGWAS Model")
 	}
 
 	if(!is.null(object$ret.fgwas))
 	{
 		filter.man <- object$ret.fgwas$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man, p.05=NA, p.01=NA, map.title="fGWAS Model")
+		fpt.plot_manhattan( filter.man, p.05=NA, p.01=0.01/NROW(object$ret.fgwas$result), map.title="fGWAS Model")
 	}
 
 	dev.off();

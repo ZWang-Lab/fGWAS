@@ -600,12 +600,14 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 
 	if(!is.na(p.05))
 	{
-		abline( h=p.05, col="gray", lwd=1, lty="dashed");
-		text( x=0, p.05 + 0.1, "p=0.05", cex=0.6, srt=90, adj=c(0.5, -1));
+		abline( h=-log10(p.05), col="gray", lwd=1, lty="dashed");
+		text( x=0, -log10(p.05) + 0.1, "p=0.05", cex=0.6, srt=90, adj=c(0.5, -1));
 	}
-	if(!is.na(p.01))
-		abline( h=p.05, col="gray", lwd=1, lty="dashed");
 
+	if(!is.na(p.01))
+	{	abline( h=-log10(p.01), col="gray", lwd=1, lty="dashed");
+		text( x=0, -log10(p.01) + 0.1, "p=0.01", cex=0.6, srt=90, adj=c(0.5, -1));
+	}
 
 	cols <- c( "green","black",  "orange",  "red", "yellow", "blue", "purple");
 	points( 1:NROW(res), -log10(res[,3]), pch=20, col=cols[ (res[,1]%%7+1)], cex=0.5 );

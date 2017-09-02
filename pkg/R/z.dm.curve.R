@@ -137,11 +137,19 @@ log_get_simu_param<-function(object, times, options=list())
 log_est_init_param<-function(object, pheY, pheX, pheT, options=list())
 {
 	mc <- get_mean_vector(pheY, pheT);
+	mc$t <- mc$t[mc$y>0]
+	mc$y <- mc$y[mc$y>0]
 	m <- length(mc$t);
+	if(m==0)
+	{
+		mc <- get_mean_vector(pheY, pheT);
+		mc$y <- mc$y - min(mc$y)*1.01;
+	}
 
 	par <- c();
 	ls.i <- ls.max <- Inf;
-	a.rate <- mc$y[m]/mc$y[m-1];
+	a.rate <- mean(mc$y[-1]/mc$y[-m]);
+	if(a.rate==1) a.rate <- 0.99
 	for(i in 1:10)
 	{
 		par.a <- mc$y[m] * a.rate^i;

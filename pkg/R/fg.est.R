@@ -154,14 +154,26 @@ proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=N
 	options$max.time <- max(pheT, na.rm=T)
 	options$min.time <- min(pheT, na.rm=T)
 
+	get_init_covariate_par <- function(pheY, pheX)
+	{
+		colnames(pheX) <- paste("x", 1:NCOL(pheX), sep="");
+		fit <- lm(Y ~.-1, data=data.frame(Y=rowMeans(pheY), pheX) );
+		if(!is.null(fit$coefficients))
+			return(fit$coefficients)
+		else
+			return(mean(pheY, na.rm=T)/colMeans(pheX, na.rm=T));
+	}
+
 	get_init_curve_par<-function( pheY, pheX, pheT, f.obj )
 	{
-		par.curve <- est_init_param( f.obj, pheY, pheX, pheT, options=options );
-		if( is.null(pheX) )
-			par.X <- c()
-		else
-			par.X <- rep( mean(pheY, na.rm=T), NCOL(pheX) );
+		par.X <- c(); YX <- 0;
+		if( !is.null(pheX) )
+		{
+			par.X <- get_init_covariate_par(pheY, pheX)
+			YX <- matrix( rep( pheX %*% par.X, NCOL(pheY)), ncol=NCOL(pheY), byrow=F);
+		}
 
+		par.curve <- est_init_param( f.obj, pheY-YX, NULL, pheT, options=options );
 		return( c( par.X, par.curve)  );
 	}
 
@@ -197,12 +209,9 @@ proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=N
 		return(A);
 	}
 
+
 	if( is.null( par.init) )
-	{
-		par.init <-  c();
-		if( !is.null(pheX)) par.init <- mean(colMeans(pheY, na.rm=T), na.rm=T)/colMeans(pheX, na.rm=T);
-		par.init <- c( par.init, est_init_param( obj.curve, pheY, pheX, pheT, options ) );
-	}
+		par.init <- get_init_curve_par(pheY, pheX, pheT, obj.curve);
 
 	if(.RR("debug")) cat("Initial parameters for curve: ", par.init, "\n")
 
