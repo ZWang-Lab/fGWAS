@@ -173,7 +173,7 @@ proc_est_curve<-function(  pheY, pheX, pheT, obj.curve, par.init=NULL, options=N
 			YX <- matrix( rep( pheX %*% par.X, NCOL(pheY)), ncol=NCOL(pheY), byrow=F);
 		}
 
-		par.curve <- est_init_param( f.obj, pheY-YX, NULL, pheT, options=options );
+		par.curve <- est_init_param( f.obj, pheY, pheX, pheT, options=options );
 		return( c( par.X, par.curve)  );
 	}
 
