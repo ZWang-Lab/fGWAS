@@ -67,8 +67,9 @@ fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", 
 	return( obj );
 }
 
-#optional items: verbose=F
+#optional items: verbose=FALSE
 #                ncores=1,
+#                use.snowfall=TRUE
 #                max.optim.failure=20 for fgwas and optim-fgwas
 #                min.optim.success=2 for fgwas and optim-fgwas
 #                use.gradient=T for fgwas and optim-fgwas

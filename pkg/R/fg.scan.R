@@ -33,7 +33,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	if( class(obj.phe)!="fgwas.phe.obj" )
 		stop("The second paramater should be phenotype object.");
 
-	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T);
+	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T, use.snowfall=TRUE);
 	default_options[names(options)] <- options;
 	options <- default_options;
 	options$opt.method <- toupper(method);
@@ -145,44 +145,51 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 			## dont use requireNamespace method which doesnt call .onAttach() hook.
 			##requireNamespace("fGWAS");
 			require(fGWAS);
-			#r.mle<- try( proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options ), FALSE );
-			##!! Tempraory
-			r.mle<- proc_mle( snp.idx.sub[k], snp.info[k,], snp.mat$snpmat[,k], obj.phe, intercept, options );
-
+			
+			i.start <- ifelse( (k-1)*snps.percore+1 > NROW(snp.idx.sub), NROW(snp.idx.sub), (k-1)*snps.percore+1); 
+			i.stop  <- ifelse( k*snps.percore>NROW(snp.idx.sub), NROW(snp.idx.sub), k*snps.percore );
+			r.mle <- c()
+			for(i in i.start:i.stop)
+			{
+				r <- try( proc_mle( snp.idx.sub[i], snp.info[i,], snp.mat$snpmat[,i], obj.phe, intercept, options ), silent =FALSE );
+				if(class(r)!="try-error")
+					r.mle <- rbind( r.mle, r);
+			}
 			return( r.mle );
 		}
 
-		if(options$verbose)
-			cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
+		cat("  Calculated SNP Range =", snp.idx[snp.sect0[i]], snp.idx[snp.sect1[i]], "\n" );
 
 		snp.idx.sub <- snp.idx[ snp.sect0[i]:snp.sect1[i] ];
 		snp.mat  <- obj.gen$reader$get_snpmat( snp.idx.sub);
 		snp.info <- obj.gen$reader$get_snpinfo( snp.idx.sub);
 
+		snps.percore <- ceiling( NROW(snp.idx.sub)/options$ncores );
+		used.ncores <-  ceiling( NROW(snp.idx.sub)/snps.percore );
+
 		r.cluster <- list();
-		#if( options$ncores>1 && require(snowfall) )
-		#{
-		#	cat("Starting parallel computing, snowfall/snow......\n");
-		#	sfInit(parallel = TRUE, cpus = options$ncores, type = "SOCK")
-		#
-		#	sfExport("snp.idx.sub", "snp.mat", "snp.info", "obj.phe", "options" );
-		#
-		#	r.cluster <- sfClusterApplyLB( 1:NROW(snp.idx.sub), cpu.fun );
-		#
-		#	sfStop();
-		#
-		#	cat("Stopping parallel computing......\n");
-		#}
-		#else
-		#{
-			cat("Starting piecewise analysis......\n");
-			#for(k in 1:NCOL(snp.idx.sub) )
-			#	r.cluster[[k]] <- cpu.fun( k );
-
-			r.cluster <- mclapply( 1:NROW(snp.idx.sub), cpu.fun, mc.cores=options$ncores );
-
-			cat("Stopping......\n");
-		#}
+		if( options$ncores>1 && options$use.snowfall==TRUE && require(snowfall) )
+		{
+			if(options$verbose) cat("Starting parallel computing(snowfall/snow)......\n");
+			
+			sfInit(parallel = TRUE, cpus = options$ncores, type = "SOCK")
+		
+			sfExport("snp.idx.sub", "snp.mat", "snp.info", "obj.phe", "options", "snps.percore" );
+		
+			r.cluster <- sfClusterApplyLB( 1:used.ncores, cpu.fun );
+		
+			sfStop();
+		
+			if(options$verbose) cat("Stopping parallel computing(snowfall/snow)\n");
+		}
+		else
+		{
+			if(options$verbose)	cat("Starting piecewise analysis(parallel package)......\n");
+			
+			r.cluster <- mclapply( 1:used.ncores, cpu.fun, mc.cores=options$ncores );
+			
+			if(options$verbose)	cat("Stopping piecewise.\n");
+		}
 
 		r.list[[i]] <- do.call( "rbind", r.cluster );
 	}

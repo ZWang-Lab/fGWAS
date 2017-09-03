@@ -24,6 +24,7 @@ fg.snpscan( fgwas.gen.obj, fgwas.phe.obj,
   \item{options}{list, including \code{verbose}, \code{ncores}, \code{max.optim.failure}, \code{min.optim.success}, \code{use.gradient}, \code{degree}, default values are 
 \code{verbose=F},
 \code{ncores=1},
+\code{use.snowfall=TRUE},
 \code{max.optim.failure=20}
 \code{min.optim.success=2}
 \code{use.gradient=FALSE}
@@ -115,7 +116,7 @@ If 'mixed' is used to scan the SNPs, the result is stored in \code{ret.mixed} wi
 
 \details{
 
-The parallel computing is available in Lunix or Linux compatible OS using the optional \code{ncores} item. \pkg{fGWAS} uses the \pkg{snowfall} for the method \code{"gls"} and \pkg{parallel} for the method \code{"fast"}, \code{"fgwas"}, and \code{"optim-fgwas"}. \cr
+The parallel computing is available using the optional \code{ncores} item. \pkg{fGWAS} uses the \pkg{snowfall} for all methods. In Linux or Linux compatible OS, \pkg{parallel} can be used to the method \code{"fast"}, \code{"fgwas"}, and \code{"optim-fgwas"} to gain more faster parallel speed. If \pkg{parallel} is perferred, set \code{use.snowfall=FALSE}.\cr
 
 Due to the difficulty to estimate and provide initial parameters for the function \code{optim}, \pkg{fGWAS} sets the maximum optim failure time and minimum optim success time in the optional items. \cr
 

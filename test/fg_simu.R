@@ -32,7 +32,7 @@ ret <- fg.sig.snp(obj1.fgwas);
 
 
 #Full test of fGWAS method
-obj1.log <- fg.snpscan( obj1$obj.gen, obj1$obj.phe, curve.type="Logistic", covariance.type="AR1", options=list(ncores=20))
+obj1.log <- fg.snpscan( obj1$obj.gen, obj1$obj.phe, curve.type="Logistic", covariance.type="AR1", options=list(ncores=20, use.snowfall=FALSE, verbose=T))
 obj1$obj.pheY <- matrix( rowMeans(as.matrix(obj1$obj.pheY), na.rm=T), ncol=1)
 obj1.scan <- fg.snpscan( obj1$obj.gen, obj1$obj.phe, method="gls", options=list(ncores=1))
 
