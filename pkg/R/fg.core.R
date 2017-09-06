@@ -180,7 +180,7 @@ proc_full_h0 <- function( obj.phe, pheY, pheX, pheT, options, h0.ref=NULL )
 
 			X <- rep(0, NROW(nna.idx));
 			if (!is.null(pheX))
-				X  <- matrix( rep(  pheX[nna.idx,] %*% parin.X , sum(col.idx) ), byrow=F, ncol=sum(col.idx) );
+				X  <- matrix( rep(  pheX[nna.idx,,drop=F] %*% parin.X , sum(col.idx) ), byrow=F, ncol=sum(col.idx) );
 
 			mu <- get_curve( obj.curve, parin.curve, pheT[nna.idx,col.idx,drop=F], options=options);
 		    Y.delt <- pheY[nna.idx,col.idx,drop=F]- mu - X;

@@ -47,11 +47,11 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 	{
 		if ( !(is.numeric( time.points ) && length(time.points)) )
 			stop("Not integer in parameter 'time.points'.");
-			
-		if(length(time.points)==1)	
+
+		if(length(time.points)==1)
 			time.points <- 1:time.points
 	}
-	
+
 	## check 'par.X'
 	if( !missing(par.X)  && !is.null(par.X) )
 		if( !all(is.numeric(par.X)) )
@@ -148,7 +148,7 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 			file.gen.dat  <- paste(file.prefix, ".geno.tab", sep="");
 			tb.gen <- data.frame(fg.obj$obj.gen$reader$get_snpinfo( NULL ),
 								 fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=T )$snpmat );
-			colnames(tb.gen) <- c(colnames(tb.gen), rownames(fg.obj$obj.phe$file.pheX) );					 
+			colnames(tb.gen) <- c(colnames(tb.gen), rownames(fg.obj$obj.phe$file.pheX) );
 			write.table( tb.gen, file=file.gen.dat, quote=F, row.names=F, col.names=T, sep="\t" );
 
 			fg.obj$obj.gen$files = list(file.gen.dat);
@@ -201,7 +201,7 @@ proc_dat_simu<-function( n.obs, n.snp, par.X, par0, par1, par2, par.covar, f.cur
 		for(i in 1:length(par.X) )
 		{
 			if(i==1)
-				pheX <- round( runif(n.obs, 1, 2) )
+				pheX <- cbind( pheX,round( runif(n.obs, 1, 2) ) )
 			else
 				pheX <- cbind( pheX, runif(n.obs, -1, 1) );
 		}

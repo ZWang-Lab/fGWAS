@@ -5,6 +5,7 @@ NCORES <- 20;
 
 #No covariate
 obj1 <- fg.simulate( "Logistic", "AR1", 2000, 1000, 1:8, phe.missing=0.05, snp.missing=0.05, sig.pos=501, plink.format=FALSE, file.prefix = NULL );
+obj1 <- fg.simulate( "Logistic", "AR1", 2000, 1000, 1:8, phe.missing=0.05, snp.missing=0.05, sig.pos=501, plink.format=FALSE, file.prefix = NULL, par.X=c(2) );
 obj1 <- fg.simulate( "Logistic", "AR1", 2000, 1000, 1:8, phe.missing=0.05, snp.missing=0.05, sig.pos=501, plink.format=FALSE, file.prefix = NULL, par.X=c(2, 3.2) );
 obj1.gls   <- fg.snpscan( obj1$obj.gen, obj1$obj.phe, method="gls", options=list(ncores=20))
 obj1.mixed <- fg.snpscan( obj1$obj.gen, obj1$obj.phe, method="mixed",options=list(ncores=20))
