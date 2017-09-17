@@ -33,7 +33,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	if( class(obj.phe)!="fgwas.phe.obj" )
 		stop("The second paramater should be phenotype object.");
 
-	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T, use.snowfall=TRUE);
+	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T, piecewise=1000, use.snowfall=TRUE);
 	default_options[names(options)] <- options;
 	options <- default_options;
 	options$opt.method <- toupper(method);
@@ -132,7 +132,7 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 {
 	if(is.null(snp.idx)) snp.idx <- 1:obj.gen$n.snp
 	snp.len <- length(snp.idx);
-	snp.sect0 <- seq( 1, snp.len, 1000 );
+	snp.sect0 <- seq( 1, snp.len, options$piecewise );
 	snp.sect1 <- c( snp.sect0[-1]-1, snp.len );
 
 	intercept <- ifelse(is.null(obj.phe$intercept), FALSE, obj.phe$intercept );
@@ -145,8 +145,8 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 			## dont use requireNamespace method which doesnt call .onAttach() hook.
 			##requireNamespace("fGWAS");
 			require(fGWAS);
-			
-			i.start <- ifelse( (k-1)*snps.percore+1 > NROW(snp.idx.sub), NROW(snp.idx.sub), (k-1)*snps.percore+1); 
+
+			i.start <- ifelse( (k-1)*snps.percore+1 > NROW(snp.idx.sub), NROW(snp.idx.sub), (k-1)*snps.percore+1);
 			i.stop  <- ifelse( k*snps.percore>NROW(snp.idx.sub), NROW(snp.idx.sub), k*snps.percore );
 			r.mle <- c()
 			for(i in i.start:i.stop)
@@ -171,23 +171,23 @@ snpsnp_curve<-function(obj.gen, obj.phe, snp.idx=NULL, options )
 		if( options$ncores>1 && options$use.snowfall==TRUE && require(snowfall) )
 		{
 			if(options$verbose) cat("Starting parallel computing(snowfall/snow)......\n");
-			
+
 			sfInit(parallel = TRUE, cpus = options$ncores, type = "SOCK")
-		
+
 			sfExport("snp.idx.sub", "snp.mat", "snp.info", "obj.phe", "options", "snps.percore" );
-		
+
 			r.cluster <- sfClusterApplyLB( 1:used.ncores, cpu.fun );
-		
+
 			sfStop();
-		
+
 			if(options$verbose) cat("Stopping parallel computing(snowfall/snow)\n");
 		}
 		else
 		{
 			if(options$verbose)	cat("Starting piecewise analysis(parallel package)......\n");
-			
+
 			r.cluster <- mclapply( 1:used.ncores, cpu.fun, mc.cores=options$ncores );
-			
+
 			if(options$verbose)	cat("Stopping piecewise.\n");
 		}
 

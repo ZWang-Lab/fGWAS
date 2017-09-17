@@ -582,9 +582,10 @@ optim_least_square<-function ( parin, fn_mle, pheY, pheT, pheX, snp.vec=NULL, pa
 	{
 		parinx<-  parin* runif( length(parin), 0.9, 1.1 );
 		control <- list(maxiter = 500 + length(parin) * 100 );
-		if ( control$maxiter > 1024 ) control$maxiter <- 1024;
+		if ( control$maxiter > 4000 ) control$maxiter <- 4000;
 
 		temp.ret <- list();
+		n.try <- 0;
 
 		while(TRUE)
 		{
@@ -594,18 +595,26 @@ optim_least_square<-function ( parin, fn_mle, pheY, pheT, pheX, snp.vec=NULL, pa
 						control = nls.lm.control(nprint=0, maxiter=control$maxiter ) ),
 						.RR("try.silent") );
 
+			n.try <- n.try + 1;
+
 			if (class(h0.nls)=="try-error" || any(is.na(h0.nls)) || !(h0.nls$info %in% c(1,2,3) ) )
 			{
 				if ( is.list(h0.nls) )
 				{
-					if( h0.nls$info == 9)
+					if( h0.nls$info == 9 )
 					{
 						control$maxiter <- control$maxiter*2;
-						if ( control$maxiter > 1024 ) control$maxiter <- 1024;
+						if ( control$maxiter > 4000 ) control$maxiter <- 4000;
 					}
 					else
+					{
 						cat("nls.lm(), info=", h0.nls$info, "", h0.nls$message, "\n")
+						parinx<-  parin* runif( length(parin), 0.9, 1.1 );
+						control <- list(maxiter = 500 + length(parin) * 100 + n.try*50 );
+						if ( control$maxiter > 4000 ) control$maxiter <- 4000;
+					}	
 				}
+
 				reset_seed();
 				next;
 			}
@@ -618,7 +627,7 @@ optim_least_square<-function ( parin, fn_mle, pheY, pheT, pheX, snp.vec=NULL, pa
 				if(is.null(ssr.ref))
 					break
 				else
-				if ( h0.nls$value < ssr.ref * 1.1 )
+				if ( h0.nls$value < ssr.ref * ifelse(n.try>10, 1.1 + (n.try-10)*0.02, 1.1 )  )
 				{
 					index <- which.min(unlist(lapply(temp.ret, function(x){x$value})))
 					h0.nls <- temp.ret[[index]];

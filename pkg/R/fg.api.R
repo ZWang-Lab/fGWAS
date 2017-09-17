@@ -73,6 +73,7 @@ fg.data.estimate<-function( obj.phe, curve.type="auto", covariance.type="auto", 
 #                max.optim.failure=20 for fgwas and optim-fgwas
 #                min.optim.success=2 for fgwas and optim-fgwas
 #                use.gradient=T for fgwas and optim-fgwas
+#                piecewise=1000  for fgwas and optim-fgwas
 #                degree=3 for mixed
 fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve.type=NULL, covariance.type=NULL, snp.sub=NULL, options=list(verbose=F))
 {
