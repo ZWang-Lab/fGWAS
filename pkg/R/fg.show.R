@@ -368,7 +368,7 @@ plot_fgwas_phe_obj<-function( obj.phe, file.pdf=NULL, curve.fitting=FALSE, ...)
 }
 
 
-plot_fgwas_curve<-function( object, snp.sub, file.pdf )
+plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, include.meanvector=TRUE )
 {
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");
@@ -412,7 +412,9 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf )
 		        MAF  = ret.set[i,5],
 		        NMISS= ret.set[i,6] ,
 		        LR2  = ret.set[i,11],
-		        METHOD=method))
+		        METHOD=method),
+		        include.rawdata=include.rawdata,
+		        include.meanvector=include.meanvector)
 	}
 
 	dev.off();

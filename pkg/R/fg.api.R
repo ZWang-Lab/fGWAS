@@ -145,14 +145,14 @@ plot.fgwas.phe.obj <- function(x, y, ..., curve.fitting=T, file.pdf=NULL)
 	plot_fgwas_phe_obj(x, file.pdf, curve.fitting, ...)
 }
 
-plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL )
+plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL, draw.rawdata=TRUE, draw.meanvector=TRUE )
 {
 	stopifnot(class(object)=="fgwas.scan.obj");
 
 	if(is.null(object$ret.fast) && is.null(object$ret.fgwas))
 		stop("No curve information in the result, only for FAST and fGWAS model");
 
-	plot_fgwas_curve( object, snp.sub, file.pdf );
+	plot_fgwas_curve( object, snp.sub, file.pdf, draw.rawdata, draw.meanvector );
 }
 
 #Inner function, not public

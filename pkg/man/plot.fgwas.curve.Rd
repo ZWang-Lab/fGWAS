@@ -7,12 +7,14 @@ Plotting the genetic curve effects associated with SNP.
 Plot the genetic curve effects based on the parameter estimation in the fGWAS model for each genotype.
 }
 \usage{
-plot.fgwas.curve( object, snp.sub, file.pdf)
+plot.fgwas.curve( object, snp.sub, file.pdf=NULL, draw.rawdata=TRUE, draw.meanvector=TRUE )
 }
 \arguments{
   \item{object}{Result object returned by the \code{\link{fg.snpscan}}.}
   \item{snp.sub}{Vector of SNP index or SNP name.}
   \item{file.pdf}{String indicating the PDF file name.}
+  \item{draw.rawdata}{Logical value indicating whether the raw phenotype curves are drawn.}
+  \item{draw.meanvector}{Logical value indicating whether the mean vectors for each genotype are drawn.}
 }
 \details{
 This function will apply to the result obtained from 'fgwas', 'fgwas-optin' or 'fast' methond.

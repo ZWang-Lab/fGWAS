@@ -618,7 +618,7 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 	par(op);
 }
 
-fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, extra=list())
+fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, include.rawdata=TRUE, include.meanvector=TRUE, extra=list())
 {
 	xlines<-function(x, y, col="black", lwd=1.0, lty="solid")
 	{
@@ -728,31 +728,35 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, ext
 
 	gen.col <- c("pink", "khaki", "skyblue")
 	plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)),  xlab="Time", ylab="Phenotype", cex=0.75);
+	if(include.rawdata)
 		for(i in 1:NROW(pheY))
 			lines(pheT[i,], pheY[i,], col=ifelse( is.null(snp.vec), "gray", gen.col[snp.vec[i]+1]), lwd=0.2);
 
 	if(!is.null(par_h0))
 	{
-		xlines(h0.mean$time, h0.mean$value, col="black", lwd=1, lty=11)
-		points(h0.mean$time,  h0.mean$value,  col="black", pch=21, cex=h0.mean$count/NROW(pheY)*1.5);
-		xlines(h0.est$time,  h0.est$value,  col="blue", lwd=1.5)
+		if(include.meanvector)
+		{
+			xlines(h0.mean$time, h0.mean$value, col="black", lwd=1, lty=11)
+			points(h0.mean$time,  h0.mean$value,  col="black", pch=21, cex=h0.mean$count/NROW(pheY)*1.5);
+		}
+		xlines(h0.est$time,  h0.est$value,  col="black", lwd=1.5)
 	}
 
 	if(!is.null(par_h1))
 	{
-		if (length(snp0.idx)>0) xlines(h1A.mean$time, h1A.mean$value, col="red", lwd=0.8, lty=11)
+		if (length(snp0.idx)>0 && include.meanvector) xlines(h1A.mean$time, h1A.mean$value, col="red", lwd=0.8, lty=11)
 		if (length(snp0.idx)>0) xlines(h1A.est$time, h1A.est$value, col="red", lwd=0.8)
 
-		if (length(snp1.idx)>0) xlines(h1B.mean$time, h1B.mean$value, col="darkgreen", lwd=0.8, lty=11)
+		if (length(snp1.idx)>0 && include.meanvector) xlines(h1B.mean$time, h1B.mean$value, col="darkgreen", lwd=0.8, lty=11)
 		if (length(snp1.idx)>0) xlines(h1B.est$time, h1B.est$value, col="darkgreen", lwd=0.8)
 
-		if (length(snp2.idx)>0) xlines(h1C.mean$time, h1C.mean$value, col="blue", lwd=1, lty=11)
+		if (length(snp2.idx)>0 && include.meanvector) xlines(h1C.mean$time, h1C.mean$value, col="blue", lwd=1, lty=11)
 		if (length(snp2.idx)>0) xlines(h1C.est$time, h1C.est$value, col="blue", lwd=0.8)
 	}
 
 	if(!is.null(snp.vec))
 	{
-		legend("topleft", legend=c(length(snp0.idx), length(snp1.idx), length(snp2.idx)),
+		legend("topleft", legend=c(paste("G0=",length(snp0.idx)), paste("G1=",length(snp1.idx)), paste("G2=",length(snp2.idx)) ),
 			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
 		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
 
