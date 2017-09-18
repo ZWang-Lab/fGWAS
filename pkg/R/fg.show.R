@@ -397,8 +397,8 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf )
 
 	par_x_num <- ifelse( is.null( object$obj.phe$pheX ), 0 , NCOL( object$obj.phe$pheX ) ) +
 	             ifelse (object$obj.phe$intercept, 1, 0) ;
-	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$pheT )$count;
-	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$pheT )$count;
+	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$obj.phe$pheT )$count;
+	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$obj.phe$pheT )$count;
 
 	for(i in 1:length(snp.index))
 	{
@@ -442,8 +442,8 @@ profile_fgwas_curve<-function( object, snp.sub )
 	ret.set  <- ret[snp.index,, drop=F]
 
 	par_x_num <- ifelse( is.null( object$obj.phe$pheX ), 1 , 1+NCOL( object$obj.phe$pheX ) );
-	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$pheT )$count;
-	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$pheT )$count;
+	par_curve_num <- get_param_info( object$obj.phe$obj.curve, object$obj.phe$pheT )$count;
+	par_covar_num <- get_param_info( object$obj.phe$obj.covar, object$obj.phe$pheT )$count;
 
 	options <- list();
 	options$max.time=max(object$obj.phe$pheT, na.rm=T);
