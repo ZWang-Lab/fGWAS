@@ -311,9 +311,10 @@ fg_select_sigsnp <- function( obj.scan, sig.level = 0.05, pv.adjust="bonferoni",
 	return(r);
 }
 
-plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, ... )
+plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, sig.level=0.05, ... )
 {
 	object <- x;
+	dots <- list(...);
 
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", tmpdir=getwd(), fileext=".pdf");
@@ -323,25 +324,25 @@ plot_fgwas_scan_obj <- function(x, y=NULL, file.pdf=NULL, ... )
 	if(!is.null(object$ret.gls))
 	{
 		filter.man <- object$ret.gls$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.gls$result), map.title="GLS" )
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, sig.level=sig.level, p.sig=sig.level/NROW(object$ret.gls$result), map.title=ifelse(is.null(dots$title), "GLS Model", dots$title)  )
 	}
 
 	if(!is.null(object$ret.mixed))
 	{
 		filter.man <-  object$ret.mixed$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.mixed$result), map.title="Mixed Model")
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, sig.level=sig.level, p.sig=sig.level/NROW(object$ret.mixed$result), map.title=ifelse(is.null(dots$title), "Mixed Model", dots$title) )
 	}
 
 	if(!is.null(object$ret.fast))
 	{
 		filter.man <- object$ret.fast$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man , p.05=NA, p.01=0.01/NROW(object$ret.fast$result), map.title="Fast fGWAS Model")
+		fpt.plot_manhattan( filter.man , p.05=NA, p.01=NA, sig.level=sig.level, p.sig=sig.level/NROW(object$ret.fast$result), map.title=ifelse(is.null(dots$title), "fast fGWAS Model", dots$title) )
 	}
 
 	if(!is.null(object$ret.fgwas))
 	{
 		filter.man <- object$ret.fgwas$result[, c("CHR", "POS", "pv"), drop=F]
-		fpt.plot_manhattan( filter.man, p.05=NA, p.01=0.01/NROW(object$ret.fgwas$result), map.title="fGWAS Model")
+		fpt.plot_manhattan( filter.man, p.05=NA, p.01=NA, sig.level=sig.level, p.sig=sig.level/NROW(object$ret.fgwas$result), map.title=ifelse(is.null(dots$title), "fGWAS Model", dots$title) )
 	}
 
 	dev.off();
@@ -360,7 +361,7 @@ plot_fgwas_phe_obj<-function( obj.phe, file.pdf=NULL, curve.fitting=FALSE, ...)
 		obj.phe <- fg_dat_est( obj.phe, obj.phe$obj.curve@type, obj.phe$obj.covar@type );
 
 	par_h0 <- c( obj.phe$est.curve$parX, obj.phe$est.curve$param, obj.phe$est.covar$param);
-	fpt.plot_curve ( obj.phe, unlist(par_h0), NULL, NULL, extra=list());
+	fpt.plot_curve ( obj.phe, unlist(par_h0), NULL, NULL, extra=list(), ...);
 
 	dev.off();
 
@@ -368,7 +369,7 @@ plot_fgwas_phe_obj<-function( obj.phe, file.pdf=NULL, curve.fitting=FALSE, ...)
 }
 
 
-plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, include.meanvector=TRUE )
+plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, include.meanvector=TRUE, ... )
 {
 	if( missing(file.pdf) || is.null(file.pdf) )
 		file.pdf <- tempfile(pattern="fgwas.plot", fileext=".pdf");
@@ -414,7 +415,8 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, inc
 		        LR2  = ret.set[i,11],
 		        METHOD=method),
 		        include.rawdata=include.rawdata,
-		        include.meanvector=include.meanvector)
+		        include.meanvector=include.meanvector,
+		        ...)
 	}
 
 	dev.off();

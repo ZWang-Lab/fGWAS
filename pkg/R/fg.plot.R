@@ -589,7 +589,7 @@ fpt.plot_correlation<-function( dat, sTitle, labels=NULL, log10=TRUE, significan
 	title( sTitle );
 }
 
-fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
+fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, sig.level=NA, p.sig=NA, map.title="" )
 {
 	op <- par( mgp = c( 1.5, 0.5,0 ), mar=c( 4, 4, 1.5, 1.5) );
 
@@ -609,6 +609,11 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 		text( x=0, -log10(p.01) + 0.1, "p=0.01", cex=0.6, srt=90, adj=c(0.5, -1));
 	}
 
+	if(!is.na(p.sig))
+	{	abline( h= -log10(p.sig), col="gray", lwd=1, lty="dashed");
+		text( x=0, -log10(p.sig) + 0.1, paste("p=",sig.level, sep=""), cex=0.6, srt=90, adj=c(0.5, -1));
+	}
+
 	cols <- c( "green","black",  "orange",  "red", "yellow", "blue", "purple");
 	points( 1:NROW(res), -log10(res[,3]), pch=20, col=cols[ (res[,1]%%7+1)], cex=0.5 );
 
@@ -618,7 +623,7 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, map.title="" )
 	par(op);
 }
 
-fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, include.rawdata=TRUE, include.meanvector=TRUE, extra=list())
+fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, include.rawdata=TRUE, include.meanvector=TRUE, extra=list(), ...)
 {
 	xlines<-function(x, y, col="black", lwd=1.0, lty="solid")
 	{
@@ -726,8 +731,14 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 		}
 	}
 
-	gen.col <- c("pink", "khaki", "skyblue")
-	plot(1,1, type="n", xlim=c(min(pheT, na.rm=T), max(pheT, na.rm=T)), ylim=c(min(pheY, na.rm=T), max(pheY, na.rm=T)),  xlab="Time", ylab="Phenotype", cex=0.75);
+	gen.col <- c("pink", "khaki", "skyblue");
+	dots <- list(...)    ;
+	if (is.null(dots$xlim)) dots$xlim = c(min(pheT, na.rm=T), max(pheT, na.rm=T));
+	if (is.null(dots$ylim)) dots$ylim = c(min(pheY, na.rm=T), max(pheY, na.rm=T));
+	if (is.null(dots$xlab)) dots$xlab = "Time";
+	if (is.null(dots$ylab)) dots$ylab = "Phenotype";
+
+	plot(1,1, type="n", xlim=dots$xlim, ylim=dots$ylim, xlab=dots$xlab, ylab=dots$ylab, cex=0.75);
 	if(include.rawdata)
 		for(i in 1:NROW(pheY))
 			lines(pheT[i,], pheY[i,], col=ifelse( is.null(snp.vec), "gray", gen.col[snp.vec[i]+1]), lwd=0.2);

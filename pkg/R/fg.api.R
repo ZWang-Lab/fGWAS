@@ -133,10 +133,10 @@ print.fgwas.scan.obj <- function(x, ..., useS4 = FALSE )
 	print_fgwas_scan_obj(x )
 }
 
-plot.fgwas.scan.obj <- function(x, y, ..., file.pdf=NULL)
+plot.fgwas.scan.obj <- function(x, y, ..., file.pdf=NULL, sig.level=0.05)
 {
 	stopifnot(class(x)=="fgwas.scan.obj");
-	plot_fgwas_scan_obj(x, y, file.pdf, ...)
+	plot_fgwas_scan_obj(x, y, file.pdf, sig.level, ...);
 }
 
 plot.fgwas.phe.obj <- function(x, y, ..., curve.fitting=T, file.pdf=NULL)
@@ -145,14 +145,14 @@ plot.fgwas.phe.obj <- function(x, y, ..., curve.fitting=T, file.pdf=NULL)
 	plot_fgwas_phe_obj(x, file.pdf, curve.fitting, ...)
 }
 
-plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL, draw.rawdata=TRUE, draw.meanvector=TRUE )
+plot.fgwas.curve <- function( object, snp.sub, file.pdf=NULL, draw.rawdata=TRUE, draw.meanvector=TRUE, ... )
 {
 	stopifnot(class(object)=="fgwas.scan.obj");
 
 	if(is.null(object$ret.fast) && is.null(object$ret.fgwas))
 		stop("No curve information in the result, only for FAST and fGWAS model");
 
-	plot_fgwas_curve( object, snp.sub, file.pdf, draw.rawdata, draw.meanvector );
+	plot_fgwas_curve( object, snp.sub, file.pdf, draw.rawdata, draw.meanvector, ... );
 }
 
 #Inner function, not public

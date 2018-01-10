@@ -7,13 +7,14 @@
   Drawing p-values in Manhattan plot.
 } 
 
-\usage{ \method{plot}{fgwas.scan.obj}(x, y, ..., file.pdf = NULL) }
+\usage{ \method{plot}{fgwas.scan.obj}(x, y, ..., file.pdf = NULL, sig.level=0.05) }
 
 \arguments{
 \item{x}{a result object return by \code{\link{fg.snpscan}} }
 \item{y}{required parameter in the generic plot function, but unused in this function.}
-\item{...}{additional arguments affecting the summary produced.}
+\item{...}{additional arguments affecting the plot.}
 \item{file.pdf}{string indicating output PDF file name.}
+\item{sig.level}{numeric value indicating the location of threshold line on the Manhattan figure.}
 }
 
 \value{
