@@ -30,11 +30,18 @@ Please install the required R packages before you install the fGWAS package. Aft
 
 ### Install fGWAS on LINUX or Mac OSX
 
+1) use install_github function in R console
+
+```
+library("devtools");
+install_github("wzhy2000/fGWAS/pkg")
+
+```
+2) use command lines in a command window  
+
 ```
 git clone https://github.com/wzhy2000/fGWAS.git
-
 cd fGWAS
-
 R CMD INSTALL pkg
 
 ```
