@@ -35,7 +35,6 @@ Please install the required R packages before you install the fGWAS package. Aft
 ```
 library("devtools");
 install_github("wzhy2000/fGWAS/pkg")
-
 ```
 2) use command lines in a command window  
 
@@ -43,7 +42,6 @@ install_github("wzhy2000/fGWAS/pkg")
 git clone https://github.com/wzhy2000/fGWAS.git
 cd fGWAS
 R CMD INSTALL pkg
-
 ```
 
 ### Install fGWAS on Windows
