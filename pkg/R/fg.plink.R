@@ -459,9 +459,6 @@ plink.cmd.select<-function(plink.command, file.plink.bed, file.plink.bim, file.p
 
 convert_simpe_to_plink <- function( snp.info, snp.mat, snp.file.base )
 {
-	chromosome <- snp.info[,1];
-	position <- snp.info[,2];
-	
 	# snp,mat : 0/1/2/NA
 	# PLINK raw data: 1/2/3==> AA,AB,BB, 0==>NA
 	snp.mat <- t(snp.mat + 1);
@@ -484,12 +481,12 @@ convert_simpe_to_plink <- function( snp.info, snp.mat, snp.file.base )
 	    	father=rep(0,dim.snps[2]),
 	    	mother=rep(0,dim.snps[2]),
 	    	sex=rep(0,dim.snps[2]),
-	    	phenotype=rep(-9,dim.snps[2]),
-			chromosome=chromosome,
-			genetic.distance=position,
-			position= position,
-			allele.1 = rep("A",dim.snps[1]),
-			allele.2 = rep("B",dim.snps[1]),
+	    	phenotype = rep(-9,dim.snps[2]),
+			chromosome = as.character(snp.info[,1]),
+			genetic.distance = as.numeric(snp.info[,3]),
+			position= as.numeric(snp.info[,4]),
+			allele.1 = as.character(snp.info[,5]),,
+			allele.2 = as.character(snp.info[,6]),
 			na.code=0);
 
 	cat(" Genotype files have been converted into PLINK binary format(bed/bim/fam)\n");

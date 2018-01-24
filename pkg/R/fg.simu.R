@@ -157,6 +157,7 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 		{
 			snp.mat <- fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
 			snp.info <- fg.obj$obj.gen$reader$get_snpinfo(NULL );
+			
 			r <- convert_simpe_to_plink( data.frame(snp.info[,c(2,1)], 0, snp.info[,c(3:5)]),  snp.mat, paste(file.prefix, ".geno", sep="") );
 
 			fg.obj$obj.gen$files = list(
@@ -350,11 +351,11 @@ proc_simu_geno<-function( n.obs, n.snp, sig.idx, prob.miss=0.03 )
 	snp2.s <- c(as.character(snp2))
 
 	if( length( which(snp1.s=="0") ) >0 ) snp1.s[ which(snp1.s=="0") ] <- "A";
-	if( length( which(snp1.s=="1") ) >0 ) snp1.s[ which(snp1.s=="1") ] <- "B";
+	if( length( which(snp1.s=="1") ) >0 ) snp1.s[ which(snp1.s=="1") ] <- "T";
 	if( length( which(snp1.s=="9") ) >0 ) snp1.s[ which(snp1.s=="9") ] <- ".";
 
 	if( length( which(snp2.s=="0") ) >0 ) snp2.s[ which(snp2.s=="0") ] <- "A";
-	if( length( which(snp2.s=="1") ) >0 ) snp2.s[ which(snp2.s=="1") ] <- "B";
+	if( length( which(snp2.s=="1") ) >0 ) snp2.s[ which(snp2.s=="1") ] <- "T";
 	if( length( which(snp2.s=="9") ) >0 ) snp2.s[ which(snp2.s=="9") ] <- ".";
 
 	snp.s <- paste(snp1.s, snp2.s, sep="");

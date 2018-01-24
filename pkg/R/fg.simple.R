@@ -128,7 +128,7 @@ simple.get.used.individuals<-function(objref)
 
 simple.get.snpindex <- function( objref, snp.names )
 {
-	return( match(snp.names, rownames(objref$snpdata$snp_info) ) );
+	return( match(snp.names, rownames(objref$snpdata$snp.info) ) );
 }
 
 
@@ -136,7 +136,7 @@ simple.get.snpindex <- function( objref, snp.names )
 load_simple_snp<-function( objref, verbose=TRUE )
 {
 	if(objref$file.simple.snp != "" )
-		tb.gen <- read.table( objref$file.simple.snp, header=T)
+		tb.gen <- read.table( objref$file.simple.snp, header=T, stringsAsFactors=F, colClasses=c(SNP="character", CHR="character", RefAllele="character", AltAllele="character"))
 	else
 		tb.gen <- objref$rawdata;
 
@@ -181,4 +181,41 @@ fg_load_simple<-function( file.simple.snp, options )
 
 }
 
+plink_command<-function(plink.path, plink.parms)
+{
+	t1 <- try(system(paste(c(plink.path, plink.parms), collapse=" "), intern = TRUE))
+	## show(t1);
+	
+	return(t1)
+}
 
+#get Identity-By-State matrix using PLINK command
+fg_getPCA<-function( objref, plink.path )
+{
+	snp.mat <- objref$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
+	snp.info <- objref$reader$get_snpinfo(NULL );
+
+	snp.mat <- snp.mat[, with(snp.info, order(CHR, POS))]
+	snp.info <- snp.info[ with(snp.info, order(CHR, POS)),]
+
+	#change chromosome string to number;
+	snp.info$CHR=as.numeric(factor(snp.info$CHR))
+
+	snp.file.base <- tempfile(fileext = ".plink")	
+	r <- convert_simpe_to_plink( data.frame(snp.info[,c(2,1)], 0, snp.info[,c(3:5)]),  snp.mat, snp.file.base);
+
+	plink.out.pca <- paste(snp.file.base, "pca", sep=".")
+	t0 <- plink_command( plink.path, c ( "--bfile ", snp.file.base, "--pca --out ", plink.out.pca)  ) ;
+
+	tb <- try(read.table(paste(plink.out.pca, "eigenvec", sep=".")));
+	if (class(tb)=="try-error")
+	{
+		show(t0);
+		stop("Failed to call PLINK.");
+	}	
+	
+	unlink( paste(snp.file.base, c("bim", "bed", "fam", "pca.eigenvec"), sep=".") );
+	
+	rownames(tb) <- tb[,1];
+	return(tb[, -c(1,2)]);
+}

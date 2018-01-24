@@ -90,6 +90,7 @@ fg.snpscan <-function( fgwas.gen.obj, fgwas.phe.obj, method="optim-fgwas", curve
 	return( ret );
 }
 
+
 fg.select.sigsnp <- function( fgwas.scan.obj, sig.level=0.05, pv.adjust="bonferroni",  options=list() )
 {
 	ret <- fg_select_sigsnp( fgwas.scan.obj, sig.level, pv.adjust,  options=list() );
@@ -166,3 +167,21 @@ profile.fgwas.curve <- function( object, snp.sub )
 	r <- profile_fgwas_curve( object, snp.sub );
 	return(r);
 }
+
+fg.get.pca<-function( object, plink.path)
+{
+	return(fg_getPCA( object, plink.path));
+}
+
+fg.get.snp <- function( object, snp.names, options=list() )
+{
+	snp.idx <- object$reader$get_snpindex(snp.names);
+	if(any(is.na(snp.idx)))
+		stop("No snp in genome data", snp.names[which(is.na(snp.idx))], "\n");
+	
+	snp  <- object$reader$get_snpmat( snp.idx );
+	colnames(snp$snpmat) <- snp.names;
+	return(snp);
+}
+
+

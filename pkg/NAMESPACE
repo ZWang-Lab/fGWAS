@@ -17,6 +17,8 @@ export(fg.select.sigsnp)
 export(fg.data.estimate)
 export(plot.fgwas.curve)
 export(profile.fgwas.curve)
+export(fg.get.pca);
+export(fg.get.snp);
 
 S3method(print, fgwas.gen.obj)
 S3method(summary, fgwas.gen.obj)
