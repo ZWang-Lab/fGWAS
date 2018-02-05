@@ -46,9 +46,18 @@ R CMD INSTALL pkg
 
 ### Install fGWAS on Windows
 
-1) Please download windows package from (https://github.com/wzhy2000/fGWAS/raw/master/windows/fGWAS.zip)
+1) Install from source codes using devtools library
 
-2) Install the package in R GUI by selecting the menu "Packages|Install package(s) from local zip files..."
+```
+>library("devtools");
+>install_github("wzhy2000/fGWAS/pkg")
+```
+
+2) Install from pre-compile package 
+
+>1 Please download windows package from (https://github.com/wzhy2000/fGWAS/raw/master/windows/fGWAS.zip)
+
+>2 Install the package in R GUI by selecting the menu "Packages|Install package(s) from local zip files..."
 
 ## Usage Instructions
 
