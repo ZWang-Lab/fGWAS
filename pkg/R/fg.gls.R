@@ -103,7 +103,8 @@ gls.fgwas <- function( sect.idx, snp.idx, snp.mat, pheY, pheZ, pheX=NULL, interc
 
 	cpu.fun<-function( sect )
 	{
-		requireNamespace("nlme");
+		## !dont use requireNamespace()
+		library("nlme");
 
 		if( (sect-1)*n.percpu+1 > NROW(snp.mat) )
 			return(NULL);
