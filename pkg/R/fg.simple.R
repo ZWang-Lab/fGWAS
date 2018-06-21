@@ -60,7 +60,7 @@ simple.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F  )
 
 		return(d.g);
 	}
-	
+
 	## if data element is AA/AB/BB
 	if(is.character(allel.mat[1,1]) || is.factor(allel.mat[1,1]) )
 	{
@@ -73,7 +73,7 @@ simple.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F  )
 	{
 		snpmat <- t(allel.mat);
 	}
-	
+
 	rownames(snpmat) <- colnames(allel.mat);
 	colnames(snpmat) <- rownames(allel.mat);
 
@@ -185,7 +185,7 @@ plink_command<-function(plink.path, plink.parms)
 {
 	t1 <- try(system(paste(c(plink.path, plink.parms), collapse=" "), intern = TRUE))
 	## show(t1);
-	
+
 	return(t1)
 }
 
@@ -194,6 +194,7 @@ fg_getPCA<-function( objref, plink.path )
 {
 	snp.mat <- objref$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
 	snp.info <- objref$reader$get_snpinfo(NULL );
+    colnames(snp.info) <- c("SNP","CHR","POS","A1","A2");
 
 	snp.mat <- snp.mat[, with(snp.info, order(CHR, POS))]
 	snp.info <- snp.info[ with(snp.info, order(CHR, POS)),]
@@ -201,7 +202,7 @@ fg_getPCA<-function( objref, plink.path )
 	#change chromosome string to number;
 	snp.info$CHR=as.numeric(factor(snp.info$CHR))
 
-	snp.file.base <- tempfile(fileext = ".plink")	
+	snp.file.base <- tempfile(fileext = ".plink")
 	r <- convert_simpe_to_plink( data.frame(snp.info[,c(2,1)], 0, snp.info[,c(3:5)]),  snp.mat, snp.file.base);
 
 	plink.out.pca <- paste(snp.file.base, "pca", sep=".")
@@ -212,10 +213,10 @@ fg_getPCA<-function( objref, plink.path )
 	{
 		show(t0);
 		stop("Failed to call PLINK.");
-	}	
-	
+	}
+
 	unlink( paste(snp.file.base, c("bim", "bed", "fam", "pca.eigenvec"), sep=".") );
-	
+
 	rownames(tb) <- tb[,1];
 	return(tb[, -c(1,2)]);
 }

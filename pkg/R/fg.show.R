@@ -377,6 +377,8 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, inc
 	if(is.null(object$obj.phe$intercept))
 		object$obj.phe$intercept <- FALSE;
 
+	dots <- list(...);
+
 	method <- "";
 	if(!is.null(object$ret.fast)) { ret <- object$ret.fast$result; method<-"FAST"; }
 	if(!is.null(object$ret.fgwas)) { ret <- object$ret.fgwas$result; method<-"fGWAS"; }
@@ -405,14 +407,24 @@ plot_fgwas_curve<-function( object, snp.sub, file.pdf, include.rawdata=TRUE, inc
 	{
 		par_h0 <- ret.set[i, 14:(13+par_x_num+par_curve_num)]
 		par_h1 <- ret.set[i, (14 + par_x_num + par_curve_num + par_covar_num + 1):(14 + par_x_num + par_curve_num + par_covar_num + par_x_num + 3*par_curve_num)]
+
+		genAA = paste0(snp.info[i,4],snp.info[i,4]);
+		genAa = paste0(snp.info[i,4],snp.info[i,5]);
+		genaa = paste0(snp.info[i,5],snp.info[i,5]);
+
 		fpt.plot_curve ( object$obj.phe, unlist(par_h0), unlist(par_h1), snp.mat$snpmat[,i],
 		        extra=list(INDEX=ret.set[i,1],
-		        NAME = as.character(ret.set[i,2]),
-		        CHR  = ret.set[i,3],
-		        POS  = ret.set[i,4],
-		        MAF  = ret.set[i,5],
-		        NMISS= ret.set[i,6] ,
-		        LR2  = ret.set[i,11],
+		        NAME  = as.character(ret.set[i,2]),
+		        CHR   = ret.set[i,3],
+		        POS   = ret.set[i,4],
+		        MAF   = ret.set[i,5],
+		        NMISS = ret.set[i,6] ,
+		        LR2   = ret.set[i,11],
+		        genAA = genAA,
+		        genAa = genAa,
+		        genaa = genaa,
+		        xlab  = dots$xlab,
+		        ylab  = dots$ylab,
 		        METHOD=method),
 		        include.rawdata=include.rawdata,
 		        include.meanvector=include.meanvector,

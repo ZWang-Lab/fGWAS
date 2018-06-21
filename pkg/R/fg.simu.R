@@ -107,9 +107,12 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 	else
 		fg_covar <- fg.getCovariance( covariance.type );
 
+	simu_covar <- get_simu_param(fg_covar, time.points);
+	simu_len <- NROW(simu_covar);
+
 	## check 'par.covar'
 	if(missing(par.covar) || is.null(par.covar) )
-		par.covar <- get_simu_param(fg_covar, fg_covar, time.points)
+		par.covar <- simu_covar
 	else
 	{
 		if( !( all(is.numeric(par.covar)) && length(par.covar)==simu_len) )
@@ -157,7 +160,7 @@ fg_simulate<-function( curve.type, covariance.type, n.obs, n.snp, time.points, p
 		{
 			snp.mat <- fg.obj$obj.gen$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
 			snp.info <- fg.obj$obj.gen$reader$get_snpinfo(NULL );
-			
+
 			r <- convert_simpe_to_plink( data.frame(snp.info[,c(2,1)], 0, snp.info[,c(3:5)]),  snp.mat, paste(file.prefix, ".geno", sep="") );
 
 			fg.obj$obj.gen$files = list(

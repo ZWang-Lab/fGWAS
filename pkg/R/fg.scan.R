@@ -33,7 +33,7 @@ fg_snpscan <-function( obj.gen, obj.phe, method, curve.type=NULL, covariance.typ
 	if( class(obj.phe)!="fgwas.phe.obj" )
 		stop("The second paramater should be phenotype object.");
 
-	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=T, piecewise=1000, use.snowfall=TRUE);
+	default_options <- list( max.optim.failure=20, min.optim.success=2, intercept=F, degree=3, ncores=1, verbose=FALSE, use.gradient=F, piecewise=1000, use.snowfall=TRUE);
 	default_options[names(options)] <- options;
 	options <- default_options;
 	options$opt.method <- toupper(method);

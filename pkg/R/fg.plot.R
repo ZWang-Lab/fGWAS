@@ -596,7 +596,7 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, sig.level=NA, p.sig=NA, map
 	y.max <- round(max(-log10(res[,3]), na.rm=T))+1;
 
 	#ylab=expression(-log[10](italic(p))),
-	plot( 1,1, type="n", xlab="SNP", ylab="-log10(pvalue)",  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ) );
+	plot( 1,1, type="n", xlab="Chromosome", ylab=expression('-log'[10]*'(p-value)'),  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ), xaxt="n" );
 
 	if(!is.na(p.05))
 	{
@@ -616,6 +616,10 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, sig.level=NA, p.sig=NA, map
 
 	cols <- c( "green","black",  "orange",  "red", "yellow", "blue", "purple");
 	points( 1:NROW(res), -log10(res[,3]), pch=20, col=cols[ (res[,1]%%7+1)], cex=0.5 );
+
+	nLen <- table(res[,1]);
+	nPos <-  cumsum(nLen)-nLen+0.5*nLen;
+    axis(1, at=nPos, labels=names(nLen), cex.axis=0.7 );
 
 	if (map.title !="" )
 		title( map.title );
@@ -738,7 +742,9 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 	if (is.null(dots$xlab)) dots$xlab = "Time";
 	if (is.null(dots$ylab)) dots$ylab = "Phenotype";
 
-	plot(1,1, type="n", xlim=dots$xlim, ylim=dots$ylim, xlab=dots$xlab, ylab=dots$ylab, cex=0.75);
+	plot(1,1, type="n", xlim=dots$xlim, ylim=dots$ylim, , cex=0.75,
+	          xlab=ifelse( is.null(extra$xlab), dots$xlab, extra$xlab),
+	          ylab=ifelse( is.null(extra$ylab), dots$ylab, extra$ylab) );
 	if(include.rawdata)
 		for(i in 1:NROW(pheY))
 			lines(pheT[i,], pheY[i,], col=ifelse( is.null(snp.vec), "gray", gen.col[snp.vec[i]+1]), lwd=0.2);
@@ -767,12 +773,16 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 
 	if(!is.null(snp.vec))
 	{
-		legend("topleft", legend=c(paste("G0=",length(snp0.idx)), paste("G1=",length(snp1.idx)), paste("G2=",length(snp2.idx)) ),
+		legend("topleft", legend=c(paste(extra$genAA,"=",length(snp0.idx)), paste(extra$genAa,"=",length(snp1.idx)), paste(extra$genaa,"=",length(snp2.idx)) ),
 			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
-		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
 
 		text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
 	}
+
+	if(is.null(dots$title))
+		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
+	else
+		title(dots$title)
 
 	return
 }

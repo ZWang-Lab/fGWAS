@@ -159,7 +159,7 @@ create.plink.obj  <- function( file.plink.bed, file.plink.bim, file.plink.fam, p
 		return(NULL);
 	}
 
-	plink.checkFiles( objref, verbose );
+	objref <- plink.checkFiles( objref, verbose );
 
 	return(objref);
 }
@@ -177,8 +177,11 @@ plink.checkFiles <- function( refobj, verbose=FALSE )
 
 	if( all( file.exists( refobj$file.plink.bed,  refobj$file.plink.bim, refobj$file.plink.fam ) ) )
 	{
+     	refobj$snpdata$plink.fam <- read.table(refobj$file.plink.fam, header=F, stringsAsFactors=F)
+		colnames(refobj$snpdata$plink.fam) <- c("FID", "IID", "PID", "MID", "SEX", "PHE");
+
 		refobj$snpdata$plink.bim <- read.table(refobj$file.plink.bim, header=F, stringsAsFactors=F)
-		refobj$snpdata$plink.fam <- read.table(refobj$file.plink.fam, header=F, stringsAsFactors=F)
+		colnames(refobj$snpdata$plink.bim) <- c("CHR", "SNP", "CM", "POS", "A1", "A2");
 
 		if(refobj$chromosome != -1)
 		{
@@ -190,6 +193,8 @@ plink.checkFiles <- function( refobj, verbose=FALSE )
 		refobj$n.ind.total  <- NROW(refobj$snpdata$plink.fam);
 		refobj$n.ind.used   <- refobj$n.ind.total ;
 		refobj$ids.used     <- as.character(refobj$snpdata$plink.fam[,2])
+
+		return(refobj);
 	}
 	else
 		stop("PLInK files can not be found!");
@@ -197,6 +202,9 @@ plink.checkFiles <- function( refobj, verbose=FALSE )
 
 plink.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F )
 {
+	if(is.null(snp.idx))
+		snp.idx <- 1:objref$n.snp;
+
 	snp.idx.ord <- order( snp.idx, decreasing=F);
 	snp.idx.new <- snp.idx[ snp.idx.ord ];
 
@@ -232,6 +240,7 @@ plink.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F )
 	}
 
 	snpmat <- matrix(NA, nrow = objref$n.ind.used, ncol=NROW(snp.idx.new));
+
 	for(i in 1:NROW(snp.idx.new))
 	{
 		if ( !check_local_snpmat( snp.idx.new[i] ) )
@@ -244,6 +253,9 @@ plink.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F )
 	}
 
 	snpmat <- snpmat[, order(snp.idx.ord), drop=F];
+
+	colnames(snpmat) <-  objref$snpdata$plink.bim[snp.idx,2];
+	rownames(snpmat) <-  objref$ids.used;
 
 	if( impute )
 	{
@@ -261,6 +273,10 @@ plink.get.snpmat<-function(objref, snp.idx=NULL, impute=F, allel=F )
 plink.get.snpinfo<-function(objref, snp.idx)
 {
 	# remove genetic distance at 3rd postion
+
+	if(is.null(snp.idx))
+		snp.idx <- 1:objref$n.snp;
+
 	return( objref$snpdata$plink.bim[snp.idx,c(2,1,4,5,6), drop=F]);
 }
 
