@@ -1,6 +1,6 @@
 Package: fGWAS
-Version: 0.2
-Date: 02 Aug 2017
+Version: 0.3
+Date: 27 Aug 208
 Title: Functional Genome-wide Association Study
 Author: Center for Computational Biology at Beijing Forest University.
 Maintainer: Zhong Wang <wzhy2000@hotmail.com>
@@ -9,5 +9,5 @@ Depends: R (>= 2.6.0), minpack.lm, snpStats, mvtnorm, parallel, methods, stats, 
 License: GPL-3
 Suggests: snow
 URL: http://www.github.com/wzhy2000/fgwas
-Packaged: 2014-12-07 00:15:41 UTC; zwang
+Packaged: 2018-08-27 00:15:41 UTC; zwang
 LazyLoad: no
