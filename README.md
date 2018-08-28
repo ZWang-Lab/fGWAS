@@ -8,7 +8,7 @@ The data analysis package for Functional Genome-wide Association Study(fGWAS)
 
 ## Abstract:
 
-The fGWAS package is aiming to identify significant SNPs that control longitudinal phenotypic traits and estimate their additive and dominant genetic effects based on the Functional Mapping model. This model is cornerstone for identifying the relation between genes and longitudinal traits in this fGWAS package.
+The fGWAS package is aiming to identify significant SNPs that control longitudinal phenotypic traits and estimate their additive and dominant genetic effects based on the Functional Mapping model. This model is cornerstone for identifying the relation between genes and longitudinal traits in this fGWAS package. (URL:https://www.sciencedirect.com/science/article/pii/S1673852718301206?via%3Dihub)
 
 ## Document
 
