@@ -170,7 +170,11 @@ profile.fgwas.curve <- function( object, snp.sub )
 
 fg.get.pca<-function( object, plink.path)
 {
-	return(fg_getPCA( object, plink.path));
+	if (class(object$reader)=="fg.dm.simple")
+  	    return(fg_simple_getPCA( object, plink.path));
+
+	if (class(object$reader)=="fg.dm.plink")
+  	    return(fg_plink_getPCA( object, plink.path));
 }
 
 fg.get.snp <- function( object, snp.names, options=list() )
@@ -178,10 +182,20 @@ fg.get.snp <- function( object, snp.names, options=list() )
 	snp.idx <- object$reader$get_snpindex(snp.names);
 	if(any(is.na(snp.idx)))
 		stop("No snp in genome data", snp.names[which(is.na(snp.idx))], "\n");
-	
+
 	snp  <- object$reader$get_snpmat( snp.idx );
 	colnames(snp$snpmat) <- snp.names;
 	return(snp);
 }
 
+fg.adjust.inflation <- function( object )
+{
+	stopifnot(class(object)=="fgwas.scan.obj");
 
+	if(is.null(object$ret.fast) && is.null(object$ret.fgwas))
+		stop("No curve information in the result, only for FAST and fGWAS model");
+
+	object <- adjust_fgwas_genomic_inflation( object );
+
+	return(object);
+}

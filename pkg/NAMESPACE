@@ -19,6 +19,7 @@ export(plot.fgwas.curve)
 export(profile.fgwas.curve)
 export(fg.get.pca);
 export(fg.get.snp);
+export(fg.adjust.inflation);
 
 S3method(print, fgwas.gen.obj)
 S3method(summary, fgwas.gen.obj)

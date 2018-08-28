@@ -528,3 +528,33 @@ fpt.profile <- function( obj.phe, par_h0, par_h1, snp.vec, options)
 
 	return(rbind(h0.pv, h1.pv));
 }
+
+
+adjust_fgwas_genomic_inflation<-function( object )
+{
+	if(!is.null(object$ret.fgwas))
+	{
+		df1 <- (sum(startsWith( colnames(object$ret.fgwas$result), "h1.")) -
+			   sum(startsWith( colnames(object$ret.fgwas$result), "h0.")))/2
+
+		tb <- object$ret.fgwas$result[, c("GENO", "LR", "pv")];
+
+		if (sum(tb$GENO==2)>0)
+		{
+			factor <- median( tb[ tb$GENO==2, "LR" ])/qchisq(0.5, df=df1);
+			tb[ tb$GENO==2, "LR" ] <- tb[ tb$GENO==2, "LR" ]/factor;
+			tb[ tb$GENO==2, "pv" ] <- pchisq(tb[ tb$GENO==2, "LR" ], df=df1, lower.tail=F)
+		}
+
+		if (sum(tb$GENO==3)>0)
+		{
+			factor <- median( tb[ tb$GENO==3, "LR" ])/qchisq(0.5, df=df1*2);
+			tb[ tb$GENO==3, "LR" ] <- tb[ tb$GENO==3, "LR" ]/factor
+			tb[ tb$GENO==3, "pv" ] <- pchisq(tb[ tb$GENO==3, "LR" ], df=df1*2, lower.tail=F)
+		}
+
+		object$ret.fgwas$result[, "pv" ] <- tb[, "pv"];
+
+		return(object);
+	}
+}

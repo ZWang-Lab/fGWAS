@@ -511,3 +511,26 @@ convert_simpe_to_plink <- function( snp.info, snp.mat, snp.file.base )
    	    	file.plink.bim = paste(snp.file.base, ".bim", sep=""),
    	    	file.plink.fam = paste(snp.file.base, ".fam", sep="")));
 }
+
+
+#get Identity-By-State matrix using PLINK command
+fg_plink_getPCA<-function( objref, plink.path )
+{
+	plink.out.pca <- tempfile( fileext=".pca" )
+	t0 <- plink_command( plink.path,
+	        c ( "--bed ", objref$reader$file.plink.bed,
+	            "--bim ", objref$reader$file.plink.bim,
+	            "--fam ", objref$reader$file.plink.fam,
+	            "--pca --out ", plink.out.pca)  ) ;
+
+	tb <- try( read.table(paste( plink.out.pca, "eigenvec", sep=".")));
+	if (class(tb)=="try-error")
+	{
+		show(t0);
+		stop("Failed to call PLINK.");
+	}
+
+	unlink( plink.out.pca );
+
+    return(tb);
+}

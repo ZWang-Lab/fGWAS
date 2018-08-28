@@ -596,32 +596,62 @@ fpt.plot_manhattan<-function( res, p.05=NA, p.01=NA, sig.level=NA, p.sig=NA, map
 	y.max <- round(max(-log10(res[,3]), na.rm=T))+1;
 
 	#ylab=expression(-log[10](italic(p))),
-	plot( 1,1, type="n", xlab="Chromosome", ylab=expression('-log'[10]*'(p-value)'),  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ), xaxt="n" );
+	plot( 1,1, type="n", xlab="Chromosome", ylab=expression('-log'[10]*'('*italic(p)*'-value)'),  cex.axis=0.7, xlim=c(1, dim(res)[1]), ylim=c(0, y.max ), xaxt="n" );
 
 	if(!is.na(p.05))
 	{
 		abline( h=-log10(p.05), col="gray", lwd=1, lty="dashed");
-		text( x=0, -log10(p.05) + 0.1, "p=0.05", cex=0.6, srt=90, adj=c(0.5, -1));
+#		text( x=0, -log10(p.05) + 0.1, "p=0.05", cex=0.6, srt=90, adj=c(0.5, -1));
 	}
 
 	if(!is.na(p.01))
 	{	abline( h=-log10(p.01), col="gray", lwd=1, lty="dashed");
-		text( x=0, -log10(p.01) + 0.1, "p=0.01", cex=0.6, srt=90, adj=c(0.5, -1));
+#		text( x=0, -log10(p.01) + 0.1, "p=0.01", cex=0.6, srt=90, adj=c(0.5, -1));
 	}
 
 	if(!is.na(p.sig))
 	{	abline( h= -log10(p.sig), col="gray", lwd=1, lty="dashed");
-		text( x=0, -log10(p.sig) + 0.1, paste("p=",sig.level, sep=""), cex=0.6, srt=90, adj=c(0.5, -1));
+#		text( x=0, -log10(p.sig) + 0.1, paste("p=",sig.level, sep=""), cex=0.6, srt=90, adj=c(0.5, -1));
 	}
 
 	cols <- c( "green","black",  "orange",  "red", "yellow", "blue", "purple");
-	points( 1:NROW(res), -log10(res[,3]), pch=20, col=cols[ (res[,1]%%7+1)], cex=0.5 );
+#	points( 1:NROW(res), -log10(res[,3]), pch=20, col=cols[ (res[,1]%%7+1)], cex=0.5 );
+
+idx1 <- which(-log10(res[,3])>=1.5)
+	points( idx1, -log10(res[idx1,3]), pch=20, col=cols[ (res[idx1,1]%%7+1)], cex=0.5 );
+
+idx2 <- which(-log10(res[,3])<1.5 & -log10(res[,3])>=1.2 )
+#idx1 <- c(idx1, sort(sample(idx2, round(length(idx2)*0.6))) )
+	
+idx2 <- which(-log10(res[,3])<1.2)
+#idx1 <- c(idx1, sample(idx2, round(length(idx2)/8)))
+ 
+idx1 <- c(idx1, which( -log10(res[,3])<1.5 & res[,2]<20000000))
+for(i in unique(res[,1]))
+{
+	idx0 <- which(res[,1]==i )
+	idx1 <- c(idx1, which(-log10(res[,3])<1.5 & res[,1]==i & res[,2]>=(max(res[idx0,2])-20000000) ) )
+	idx0 <- which(-log10(res[,3])<1.5 & res[,1]==i) 
+	if(NROW(idx0)>0)
+	{
+	fill.col <- cols[(as.numeric(i)%%7+1)]
+	cat(as.numeric(i)%%7+1, fill.col ,"\n")
+	
+	   rect(min(idx0), 0, max(idx0), 1.5, col=fill.col , border=fill.col );
+	   }
+}
+
+cat("idx1", NROW(idx1), "\n")
+idx1 <- sort(unique(idx1));
+#points( idx1, -log10(res[idx1,3]), pch=20, col=cols[ (res[idx1,1]%%7+1)], cex=0.5 );
+
+
 
 	nLen <- table(res[,1]);
 	nPos <-  cumsum(nLen)-nLen+0.5*nLen;
     axis(1, at=nPos, labels=names(nLen), cex.axis=0.7 );
 
-	if (map.title !="" )
+	if (map.title !="" ) 
 		title( map.title );
 
 	par(op);
@@ -773,7 +803,15 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 
 	if(!is.null(snp.vec))
 	{
-		legend("topleft", legend=c(paste(extra$genAA,"=",length(snp0.idx)), paste(extra$genAa,"=",length(snp1.idx)), paste(extra$genaa,"=",length(snp2.idx)) ),
+		#legend("topleft", legend=c(paste(extra$genAA,"=",length(snp0.idx)), paste(extra$genAa,"=",length(snp1.idx)), paste(extra$genaa,"=",length(snp2.idx)) ),
+		#	col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
+		legend("topleft", legend=c(
+		        #substitute(expression(italic(xxx)), list(xxx=extra$genAA) ), 
+		        #substitute(expression(italic(xxx)), list(xxx=extra$genAa) ), 
+		        #substitute(expression(italic(xxx)), list(xxx=extra$genaa) ) ), 
+		        expression(italic(CC)), 
+		        expression(italic(CT)), 
+		        expression(italic(TT))), 
 			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
 
 		text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
@@ -783,6 +821,8 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 		title(main = paste( extra$METHOD, "SNP=", extra$NAME, "LR2=", round(extra$LR2, 1), sep=" "), cex=0.75)
 	else
 		title(dots$title)
-
+ 
+box(col="black");
+ 
 	return
 }

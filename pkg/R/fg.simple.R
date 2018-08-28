@@ -190,7 +190,7 @@ plink_command<-function(plink.path, plink.parms)
 }
 
 #get Identity-By-State matrix using PLINK command
-fg_getPCA<-function( objref, plink.path )
+fg_simple_getPCA<-function( objref, plink.path )
 {
 	snp.mat <- objref$reader$get_snpmat( NULL, impute=F, allel=F)$snpmat;
 	snp.info <- objref$reader$get_snpinfo(NULL );

@@ -527,7 +527,7 @@ fg_fit_curve<-function( pheY, pheX, pheT, curve.type="auto", file.plot.pdf=NULL,
 				par_c <- r$par;
 				if ( !is.null(pheX) )
 				{
-				   par_X <- c( par_X, r$par[ 1:NCOL(pheX)]);
+				   par_X <- r$par[ 1:NCOL(pheX)];
 				   par_c <- r$par[ -c(1:NCOL(pheX)) ]
 				   mu_X <- mean( pheX %*% par_X, na.rm=T );
 				}
