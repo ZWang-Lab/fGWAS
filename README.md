@@ -4,11 +4,11 @@ The data analysis package for Functional Genome-wide Association Study(fGWAS)
 
 # Reference
 
-[1] Wang, Z., Wang, N., Wu, R., & Wang, Z. (2018). fGWAS: An R package for genome-wide association analysis with longitudinal phenotypes. Journal of genetics and genomics= Yi chuan xue bao, 2018 Jul 10..
+[1] Wang, Z., Wang, N., Wu, R., & Wang, Z. (2018). fGWAS: An R package for genome-wide association analysis with longitudinal phenotypes. Journal of genetics and genomics= Yi chuan xue bao, 2018 Jul 10. [URL](https://www.sciencedirect.com/science/article/pii/S1673852718301206?via%3Dihub).
 
 ## Abstract:
 
-The fGWAS package is aiming to identify significant SNPs that control longitudinal phenotypic traits and estimate their additive and dominant genetic effects based on the Functional Mapping model. This model is cornerstone for identifying the relation between genes and longitudinal traits in this fGWAS package. (URL:https://www.sciencedirect.com/science/article/pii/S1673852718301206?via%3Dihub)
+The fGWAS package is aiming to identify significant SNPs that control longitudinal phenotypic traits and estimate their additive and dominant genetic effects based on the Functional Mapping model. This model is cornerstone for identifying the relation between genes and longitudinal traits in this fGWAS package. 
 
 ## Document
 
