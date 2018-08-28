@@ -4,7 +4,7 @@ The data analysis package for Functional Genome-wide Association Study(fGWAS)
 
 # Reference
 
-[1] Wang, Z., Wang, N., Wu, R., & Wang, Z. (2018). fGWAS: An R package for genome-wide association analysis with longitudinal phenotypes. Journal of genetics and genomics= Yi chuan xue bao, 2018 Jul 10. [URL](https://www.sciencedirect.com/science/article/pii/S1673852718301206?via%3Dihub).
+[1] Wang, Z., Wang, N., Wu, R., & Wang, Z. (2018). fGWAS: An R package for genome-wide association analysis with longitudinal phenotypes. Journal of genetics and genomics= Yi chuan xue bao, 2018 Jul 10. [URL](https://linkinghub.elsevier.com/retrieve/pii/S1673-8527(18)30120-6).
 
 ## Abstract:
 
