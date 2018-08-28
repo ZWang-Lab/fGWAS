@@ -4,9 +4,7 @@ The data analysis package for Functional Genome-wide Association Study(fGWAS)
 
 # Reference
 
-[1]. Luo, J., Berg, A., Ahn, K., Das, K., Li, J., Wang, Z., ... & Wu, R. (2010). Functional Genome-Wide Association Studies of Longitudinal Traits. In Handbook of Adaptive Designs in Pharmaceutical and Clinical Development (pp. 23-1). CRC Press..
-
-[2]. Das, K., Li, J., Wang, Z., Tong, C., Fu, G., Li, Y., ... & Wu, R. (2011). A dynamic model for genome-wide association studies. Human genetics, 129(6), 629-639.
+[1] Wang, Z., Wang, N., Wu, R., & Wang, Z. (2018). fGWAS: An R package for genome-wide association analysis with longitudinal phenotypes. Journal of genetics and genomics= Yi chuan xue bao, 2018 Jul 10..
 
 ## Abstract:
 
