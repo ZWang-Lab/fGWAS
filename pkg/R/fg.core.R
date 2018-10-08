@@ -768,7 +768,7 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 				if(!is.null(pheX))
 				{
 					pheX.k<- try( pheX[idx.k, , drop = F] )
-					if(class(pheX.k)=="try-error") browser();
+					##if(class(pheX.k)=="try-error") browser();
 					X  <- matrix( rep(  pheX.k %*% parin.X , NCOL(pheY) ), byrow=F, ncol=NCOL(pheY) );
 				}
 				else
@@ -840,7 +840,7 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 			if(!is.null(pheX))
 			{
 				pheX.k<- try( pheX[idx.k, , drop = F] )
-				if(class(pheX.k)=="try-error") browser();
+				##if(class(pheX.k)=="try-error") browser();
 				X  <- matrix( rep(  pheX.k %*% parin.X , NCOL(pheY) ), byrow=F, ncol=NCOL(pheY) );
 			}
 			else

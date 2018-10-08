@@ -465,7 +465,7 @@ check_fittness<-function( pheY, pheX, pheT, f.obj, parin )
     if( is.null(y_resd) )
    		return(list(fit=TRUE));
 
-if(NCOL(y_resd)==1) browser();
+#if(NCOL(y_resd)==1) browser();
 
 	y_sd   <- apply( pheY, 2, function(x) sd(x) )
 
