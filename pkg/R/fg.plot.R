@@ -803,16 +803,16 @@ fpt.plot_curve <- function( obj.phe, par_h0=NULL, par_h1=NULL, snp.vec=NULL, inc
 
 	if(!is.null(snp.vec))
 	{
-		#legend("topleft", legend=c(paste(extra$genAA,"=",length(snp0.idx)), paste(extra$genAa,"=",length(snp1.idx)), paste(extra$genaa,"=",length(snp2.idx)) ),
-		#	col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
-		legend("topleft", legend=c(
+		legend("topleft", legend=c(paste(extra$genAA,"=",length(snp0.idx)), paste(extra$genAa,"=",length(snp1.idx)), paste(extra$genaa,"=",length(snp2.idx)) ),
+			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
+		#legend("topleft", legend=c(
 		        #substitute(expression(italic(xxx)), list(xxx=extra$genAA) ), 
 		        #substitute(expression(italic(xxx)), list(xxx=extra$genAa) ), 
 		        #substitute(expression(italic(xxx)), list(xxx=extra$genaa) ) ), 
-		        expression(italic(CC)), 
-		        expression(italic(CT)), 
-		        expression(italic(TT))), 
-			col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
+		        #expression(italic(CC)), 
+		        #expression(italic(CT)), 
+		        #expression(italic(TT))), 
+			    #col=c("red", "darkgreen", "blue" ),lty=c("solid","solid","solid"), cex=0.75  )
 
 		text(median(c(pheT), na.rm=T), min(pheY, na.rm=T), paste( "MAF=", round(extra$MAF, 3), "NMISS=", extra$NMISS,sep=" "), cex=0.75, adj=c(0.5, 0.5) );
 	}

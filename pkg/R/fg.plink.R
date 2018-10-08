@@ -523,13 +523,14 @@ fg_plink_getPCA<-function( objref, plink.path )
 	            "--fam ", objref$reader$file.plink.fam,
 	            "--pca --out ", plink.out.pca)  ) ;
 
-	tb <- try( read.table(paste( plink.out.pca, "eigenvec", sep=".")));
+	tb <- try( read.table(paste( plink.out.pca, "eigenvec", sep="."), nrows=1));
 	if (class(tb)=="try-error")
 	{
 		show(t0);
 		stop("Failed to call PLINK.");
 	}
 
+    colnames(tb) <- c("FID","IID", paste0("PCA", 1:(NCOL(tb)-2) ) );
 	unlink( plink.out.pca );
 
     return(tb);

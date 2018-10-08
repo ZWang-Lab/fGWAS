@@ -218,5 +218,7 @@ fg_simple_getPCA<-function( objref, plink.path )
 	unlink( paste(snp.file.base, c("bim", "bed", "fam", "pca.eigenvec"), sep=".") );
 
 	rownames(tb) <- tb[,1];
+    colnames(tb) <- paste0("PCA", 1:NCOL(tb) );
+
 	return(tb[, -c(1,2)]);
 }

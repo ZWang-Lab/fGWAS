@@ -192,10 +192,20 @@ fg.adjust.inflation <- function( object )
 {
 	stopifnot(class(object)=="fgwas.scan.obj");
 
-	if(is.null(object$ret.fast) && is.null(object$ret.fgwas))
+	if(is.null(object$ret.fast) && is.null(object$ret.fgwas) && is.null(object$ret.gls))
 		stop("No curve information in the result, only for FAST and fGWAS model");
 
 	object <- adjust_fgwas_genomic_inflation( object );
 
 	return(object);
 }
+
+fg.qqplot<-function(object, png.file, title="", width=480 )
+{
+	stopifnot(class(object)=="fgwas.scan.obj");
+	
+	fg_qqplot( object, png.file, title, width );
+
+}
+
+

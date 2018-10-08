@@ -20,6 +20,7 @@ export(profile.fgwas.curve)
 export(fg.get.pca);
 export(fg.get.snp);
 export(fg.adjust.inflation);
+export(fg.qqplot);
 
 S3method(print, fgwas.gen.obj)
 S3method(summary, fgwas.gen.obj)

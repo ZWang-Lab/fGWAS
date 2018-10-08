@@ -75,6 +75,15 @@ proc_mle<-function( index, snp.info, snp.vec, obj.phe, intercept=F, options=list
 
 	h0.ref  <- sum(-1 * obj.phe$h0$pv, na.rm=T);
 	snp.miss <- which(is.na(snp.vec) | snp.vec<0 | snp.vec>2 );
+	snp.miss0 <- snp.miss;
+	snp.vec0 <- which(snp.vec==0);
+	snp.vec1 <- which(snp.vec==1);
+	snp.vec2 <- which(snp.vec==2);
+	## if the genotye is less than 5, curve fitting is difficult.
+	if( NROW(snp.vec0) < 5) snp.miss <- c(snp.miss, snp.vec0);  
+	if( NROW(snp.vec1) < 5) snp.miss <- c(snp.miss, snp.vec1);  
+	if( NROW(snp.vec2) < 5) snp.miss <- c(snp.miss, snp.vec2);  
+	
 	if (length(snp.miss)>0)
 	{
 		if (!is.null(pheX))
@@ -140,7 +149,7 @@ proc_mle<-function( index, snp.info, snp.vec, obj.phe, intercept=F, options=list
 
 	maf <- ifelse( mean(snp.vec)/2>0.5, 1-mean(snp.vec)/2, mean(snp.vec)/2 );
 
-	re <- data.frame( index, snp.info[c(1:3)], matrix(c(maf, length(snp.miss), sum(snp.vec==0), sum(snp.vec==1), sum(snp.vec==2),
+	re <- data.frame( index, snp.info[c(1:3)], matrix(c(maf, NROW(snp.miss0), NROW(snp.vec0), NROW(snp.vec1), NROW(snp.vec2),
 			gen.par, r.val, pv=r.pv, h0$value, h0$par, h1$value, h1$par, h0$R2, h1$R2 ) , nrow=1 ), stringsAsFactors=F);
 
 	if( .RR("debug")  )

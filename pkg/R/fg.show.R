@@ -529,32 +529,102 @@ fpt.profile <- function( obj.phe, par_h0, par_h1, snp.vec, options)
 	return(rbind(h0.pv, h1.pv));
 }
 
+adjust_factor<-function(result)
+{
+	df1 <- (sum(startsWith( colnames(result), "h1.")) -
+		   sum(startsWith( colnames(result), "h0.")))/2
+
+	tb <- result[, c("GENO", "LR", "pv")];
+
+	if (sum(tb$GENO==2)>0)
+	{
+		factor <- median( tb[ tb$GENO==2, "LR" ])/qchisq(0.5, df=df1);
+		tb[ tb$GENO==2, "LR" ] <- tb[ tb$GENO==2, "LR" ]/factor;
+		tb[ tb$GENO==2, "pv" ] <- pchisq(tb[ tb$GENO==2, "LR" ], df=df1, lower.tail=F)
+	}
+
+	if (sum(tb$GENO==3)>0)
+	{
+		factor <- median( tb[ tb$GENO==3, "LR" ])/qchisq(0.5, df=df1*2);
+		tb[ tb$GENO==3, "LR" ] <- tb[ tb$GENO==3, "LR" ]/factor;
+		tb[ tb$GENO==3, "pv" ] <- pchisq(tb[ tb$GENO==3, "LR" ], df=df1*2, lower.tail=F)
+	}
+
+	result[, "pv" ] <- tb[, "pv"];
+	return(result);
+}
+
+optim_factor<-function(result)
+{
+    library("GenABEL");
+    lik.chisq<-function(par)
+    {
+        df = par[1]
+        factor=median(LR)/qchisq(0.5, df=df);
+        pv =  pchisq( LR/factor, df=df, log=F, lower.tail=F);
+        r = estlambda(pv)$estimate;
+    
+        return( abs(1-r) );
+    }
+
+    LR <- result$LR;
+    par <- optim(3, fn=lik.chisq, method="Brent", lower=0.1, upper=10, control=list(maxit=1000));
+    if(par$convergence!=0)
+       stop(paste("Optim function is failed to get convergence, error=", par$convergence, "."));
+
+    df=par$par
+    factor=median(LR)/qchisq(0.5, df=df);
+    pv =  pchisq( LR/factor, df=df, log=F, lower.tail=F);
+    
+    result$pv <- pv;
+    return(result);
+}
 
 adjust_fgwas_genomic_inflation<-function( object )
 {
 	if(!is.null(object$ret.fgwas))
-	{
-		df1 <- (sum(startsWith( colnames(object$ret.fgwas$result), "h1.")) -
-			   sum(startsWith( colnames(object$ret.fgwas$result), "h0.")))/2
+	    result <- object$ret.fgwas$result;
+	if(!is.null(object$ret.fast))
+	    result <- object$ret.fast$result;
+	if(!is.null(object$ret.gls))
+	    result <- object$ret.gls$result;
 
-		tb <- object$ret.fgwas$result[, c("GENO", "LR", "pv")];
+    # result <- adjust_factor(result);
+    result <- optim_factor(result);
 
-		if (sum(tb$GENO==2)>0)
-		{
-			factor <- median( tb[ tb$GENO==2, "LR" ])/qchisq(0.5, df=df1);
-			tb[ tb$GENO==2, "LR" ] <- tb[ tb$GENO==2, "LR" ]/factor;
-			tb[ tb$GENO==2, "pv" ] <- pchisq(tb[ tb$GENO==2, "LR" ], df=df1, lower.tail=F)
-		}
-
-		if (sum(tb$GENO==3)>0)
-		{
-			factor <- median( tb[ tb$GENO==3, "LR" ])/qchisq(0.5, df=df1*2);
-			tb[ tb$GENO==3, "LR" ] <- tb[ tb$GENO==3, "LR" ]/factor
-			tb[ tb$GENO==3, "pv" ] <- pchisq(tb[ tb$GENO==3, "LR" ], df=df1*2, lower.tail=F)
-		}
-
-		object$ret.fgwas$result[, "pv" ] <- tb[, "pv"];
-
-		return(object);
-	}
+	if(!is.null(object$ret.fgwas))
+	     object$ret.fgwas$result <- result;
+	if(!is.null(object$ret.fast))
+	    object$ret.fast$result <- result;
+	if(!is.null(object$ret.gls))
+	    object$ret.gls$result <- result;
+	    
+	return(object);    
 }
+
+fg_qqplot<-function(object, png.file, title="", width=480 )
+{
+	if(!is.null(object$ret.fgwas))
+	    result <- object$ret.fgwas$result;
+	if(!is.null(object$ret.fast))
+	    result <- object$ret.fast$result;
+	if(!is.null(object$ret.gls))
+	    result <- object$ret.gls$result;
+	if(!is.null(object$ret.mixed))
+	    result <- object$ret.mixed$result;
+
+    library("GenABEL");
+
+    pv <- result$pv;
+    png(png.file, width=600, height=600);
+    qqplot(-log10(runif(NROW(pv))),  -log10(pv), main=title, 
+        xlab="Normal theoretical quantiles", ylab="Normal data( -log10(pv) )", cex.lab=1.2 );
+    segments(0,0,max(-log10(pv)),max(-log10(pv)) ,col="blue");
+    
+    lbd0=round(estlambda(pv)$estimate,3);
+    lbd.lab=bquote( lambda:.(lbd0) );
+    legend( "topleft", legend=lbd.lab, bty="n" );
+
+    dev.off();
+}
+
