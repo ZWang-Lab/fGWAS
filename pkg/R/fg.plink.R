@@ -523,7 +523,7 @@ fg_plink_getPCA<-function( objref, plink.path )
 	            "--fam ", objref$reader$file.plink.fam,
 	            "--pca --out ", plink.out.pca)  ) ;
 
-	tb <- try( read.table(paste( plink.out.pca, "eigenvec", sep="."), nrows=1));
+	tb <- try( read.table(paste( plink.out.pca, "eigenvec", sep=".") ));
 	if (class(tb)=="try-error")
 	{
 		show(t0);
