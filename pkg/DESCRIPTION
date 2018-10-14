@@ -1,6 +1,6 @@
 Package: fGWAS
-Version: 0.3.5
-Date: Oct 8, 2018
+Version: 0.3.6
+Date: Oct 13, 2018
 Title: Functional Genome-wide Association Study
 Author: Zhong Wang, Center for Computational Biology at Beijing Forest University.
 Maintainer: Zhong Wang <wzhy2000@hotmail.com>
