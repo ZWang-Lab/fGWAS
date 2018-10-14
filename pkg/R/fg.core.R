@@ -776,9 +776,9 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 
 				parin.curve0 <- parin.curve[1:n.par.curve];
 				Y.delt <- rbind(Y.delt, pheY[idx.k,, drop=F] - get_curve( obj.curve, parin.curve0, pheT[idx.k,, drop=F], options=options ) - X );
-			}
 
-			parin.curve  <- parin.curve[- c(1:n.par.curve)];
+  			    parin.curve  <- parin.curve[- c(1:n.par.curve)];
+			}
 		}
 
 	    if(sum.type==0)
@@ -808,27 +808,46 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 		return( - sum(pv) );
 	}
 
-	if( is.null(parX))
-		parin    <- c( obj.phe$est.curve$parX, rep( obj.phe$est.curve$param, 3 ) )
-	else
-		parin    <- c( rep( obj.phe$est.curve$param, 3 ) );
+    add_miss_snp_parameter<-function( parin )
+    {
+       if(geno.type==3) 
+          return(parin)
+       else   
+       {
+          n.par.curve	<- get_param_info( obj.phe$obj.curve, pheT, options)$count;
+          par0 <- par1 <- par2 <- rep(NA, n.par.curve);
+          if( 0 %in% snp.vec ) { par0 <- parin[1:n.par.curve]; parin <- parin[-c(1:n.par.curve)]; }
+          if( 1 %in% snp.vec ) { par1 <- parin[1:n.par.curve]; parin <- parin[-c(1:n.par.curve)]; }
+          if( 2 %in% snp.vec ) { par2 <- parin[1:n.par.curve]; parin <- parin[-c(1:n.par.curve)]; }
+		  
+		  return(c(par0, par1, par2));
+       }
+    }
 
+    org.snp <- snp.vec;
 	snp.vec <- snp.comb[snp.vec+1];
+	geno.type = NROW(unique(snp.vec));
+	
+    if( is.null(parX))
+		parin    <- c( obj.phe$est.curve$parX, rep( obj.phe$est.curve$param, geno.type ) )
+	else
+		parin    <- c( rep( obj.phe$est.curve$param, geno.type ) );
+     
 	h1.curve <- optim_least_square( parin, proc_h1_curve, pheY = pheY, pheT = pheT, pheX = pheX, snp.vec=snp.vec, parX=parX, obj.curve = obj.phe$obj.curve, method=(options$opt.method=="FAST"), ssr.ref=h0$ssr );
 	if( is.null(h1.curve) || is.na(h1.curve$value) || is.infinite(h1.curve$value) )
-		return(list(par=c(parin, obj.phe$est.covar$param), value=NA, R2=NA));
+		return(list(par=c( add_miss_snp_parameter(parin), obj.phe$est.covar$param), value=NA, R2=NA));
 
 	Y.delt <- matrix( NA, nrow=NROW(pheY), ncol=NCOL(pheY) );
 	if(is.null(pheX) || !is.null(parX) )
 	{
-		parin.curve <- matrix( h1.curve$par, nrow=3, byrow=T);
+		parin.curve <- matrix( add_miss_snp_parameter(h1.curve$par),  nrow=3, byrow=T);
 		parin.X <- c();
 		if(!is.null(parX))
 			parin.X <- parX;
 	}
 	else
 	{
-		parin.curve <- matrix( h1.curve$par[-c(1:NCOL(pheX))], nrow=3, byrow=T);
+		parin.curve <- matrix( add_miss_snp_parameter( h1.curve$par[-c(1:NCOL(pheX))]), nrow=3, byrow=T);
 		parin.X <- h1.curve$par[ c(1:NCOL(pheX)) ]
 	}
 
@@ -858,7 +877,13 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 	h1.cm$pv  <- pv;
 	h1.cm$value <- -sum(pv);
 	h1.cm$ssr <- sum(Y.delt^2, na.rm=T);
-	h1.cm$par <- c(parin.X, c(t(parin.curve[snp.comb+1,])), parin.covar );
+	
+	parin.curve <- parin.curve[snp.comb+1,];
+	if( !(0 %in% org.snp) ) parin.curve[1,] <- rep(NA, NCOL(parin.curve));
+	if( !(1 %in% org.snp) ) parin.curve[2,] <- rep(NA, NCOL(parin.curve));
+	if( !(2 %in% org.snp) ) parin.curve[3,] <- rep(NA, NCOL(parin.curve));
+
+	h1.cm$par <- c(parin.X, c(t(parin.curve)), parin.covar );
 	h1.cm$R2 <- get_R2 (pheY, pheX, pheT, obj.phe$obj.curve, h1.cm$par, snp.vec);
 
 	if( .RR("debug")  && !options$b.permu )
@@ -866,6 +891,97 @@ proc_fast_h1_comb<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, sn
 
 	return(h1.cm);
 
+}
+
+proc_fast_h1_allinone <- function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0, parX=NULL )
+{
+	nna.vec = get_non_na_number(pheY);
+	n.par.curve	<- get_param_info( obj.phe$obj.curve, pheT, options)$count;
+	if(NROW(unique(snp.vec))==1) 
+    {
+        h1 <- h0;
+
+		parin.X <- h0$par[ c(1:NCOL(pheX)) ];
+		parin.covar <- h0$par[c(1+NCOL(pheX)+n.par.curve):NROW(h0$par)]; 
+		parin.curve <- rbind( rep(NA, n.par.curve), rep(NA, n.par.curve), rep(NA, n.par.curve));
+		parin.curve[unique(snp.vec)+1,] <- h0$par[c(1+NCOL(pheX)):(NCOL(pheX)+n.par.curve)]; 
+        h1$par <- c( parin.X, c(t(parin.curve)), parin.covar );
+		return(h1);
+    }
+    
+    ## H1 is not better than H0, try to get all parameters of H1 in one optim function
+	if( is.null(pheX) || !is.null(parX) )
+	{
+		parin.X <- parX;
+		parin.curve <- h0$par[ 1:length(obj.phe$est.curve$param) ] ;
+		parin.covar <- h0$par[ (length(obj.phe$est.curve$param) +1) : NROW(h0$par)];
+	}
+	else
+	{
+		parin.X <- h0$par[ c(1:NCOL(pheX)) ]
+		parin.curve <- h0$par[ (length(parin.X)+1):(length(parin.X) + length(obj.phe$est.curve$param) )] ;
+		parin.covar <- h0$par[ (length(parin.X) + length(obj.phe$est.curve$param) +1) : NROW(h0$par)];
+	}
+
+	geno.type = NROW(unique(snp.vec));
+
+	optim.func <- function( parin, sum_type=0 )
+	{
+		if(!is.null(pheX) )
+		{
+			parin.X <- parin[1:NCOL(pheX)];
+			parin <- parin[-c(1:NCOL(pheX))];
+		}
+
+		parin.curve <- parin[1:(3*n.par.curve)];
+		parin.covar <- parin[-c(1:(3*n.par.curve))];
+
+		if(!is.null(pheX))
+			Y.delt<- pheY - matrix( rep(  pheX %*% parin.X , NCOL(pheY) ), byrow=F, ncol=NCOL(pheY) )
+		else
+			Y.delt<- pheY;
+
+		parin.curve <- matrix(parin.curve, nrow=geno.type, byrow=T)
+		snp.idx <- 0;
+		for(k in 0:2)
+		{
+			idx.k <- which( snp.vec==k);
+			if ( length(idx.k) >0 )
+			{
+				snp.idx <- snp.idx + 1;
+				Y.delt[idx.k,] <- Y.delt[idx.k,,drop=F] - get_curve( obj.phe$obj.curve, parin, pheT[snp.idx,, drop=F], options=options );
+			}
+		}
+		
+		if(sum_type==0)
+		{
+			mat.cov <- get_matrix( obj.phe$obj.covar, parin.covar, pheT );
+			pv <- try(dmvnorm_fast( Y.delt, rep(0, NCOL(mat.cov)), mat.cov, nna.vec, log=T), .RR("try.silent") );
+			if ( class(pv)=="try-error" || is.na(pv) )
+				return (NaN)
+			else
+				return(-sum(pv));
+		}	
+		else
+			return( sum(Y.delt^2, na.rm=T) );
+	}
+
+
+	hx <- try( optim( c(parin.X, rep(parin.curve, geno.type), parin.covar), optim.func, sum_type=0, method="BFGS"), .RR("try.silent") );
+	if( is.null(hx) || class(hx)=="try-error" || is.na(hx$value) || is.infinite(hx$value) )
+		return(list(par=c(parin.X, rep(parin.curve, 3), parin.covar ), value=NA, R2=NA));
+
+    if(geno.type < 3)
+    {
+        snp.miss <- which(is.na(c(0,1,2) %in%unique(snp.vec))) -1 ;
+        nstart <- NROW(parin.X,) + snp.miss * n.par.curve;
+        hx$par <- c( hx$par[1:nstart], rep(NA, n.par.curve), hx$par[(nstart+1):NROW(hx$par)]);
+	}
+	
+	hx$ssr <- optim.func( hx$par, sum_type=1);
+	hx$R2  <- get_R2 (pheY, pheX, pheT, obj.phe$obj.curve, hx$par, snp.vec);
+
+	return( hx );
 }
 
 proc_fast_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
@@ -881,69 +997,8 @@ proc_fast_h1<-function( obj.phe, pheY, pheX, pheT, snp.vec, options, h0)
 	h1x[[length(h1x)+1]] <- proc_fast_h1_comb(obj.phe, pheY, pheX, pheT, snp.vec, options, h0, c(0,1,1));
 	h1x[[length(h1x)+1]] <- proc_fast_h1_comb(obj.phe, pheY, pheX, pheT, snp.vec, options, h0, c(0,0,2));
 	h1x[[length(h1x)+1]] <- proc_fast_h1_comb(obj.phe, pheY, pheX, pheT, snp.vec, options, h0, c(0,1,0));
+	h1x[[length(h1x)+1]] <- proc_fast_h1_allinone(obj.phe, pheY, pheX, pheT, snp.vec, options, h0 );
 
 	idx.min <- which.min(unlist(lapply(h1x, function(h1){return(h1$value)})))
-	if( h0$value - h1x[[idx.min]]$value >= 0 )
-		return(h1x[[idx.min]]);
-
-	parX <- NULL;
-	if(length(obj.phe$est.curve$parX)>0)
-		parX <- h0$par[1:length(obj.phe$est.curve$parX)];
-
-	Y.delt <- matrix( NA, nrow=NROW(pheY), ncol=NCOL(pheY) );
-	if( is.null(pheX) )
-	{
-		parin.X <- c();
-		parin.curve <- h0$par[ 1:length(obj.phe$est.curve$param) ] ;
-	}
-	else
-	{
-		parin.X <- h0$par[ c(1:NCOL(pheX)) ]
-		parin.curve <- h0$par[ (length(parin.X)+1):(length(parin.X) + length(obj.phe$est.curve$param) )] ;
-	}
-
-	if(!is.null(pheX))
-		Y.delt<- pheY - matrix( rep(  pheX %*% parin.X , NCOL(pheY) ), byrow=F, ncol=NCOL(pheY) )
-	else
-		Y.delt<- pheY;
-
-    nna.vec = get_non_na_number(pheY);
-
-	h1.cm <- list();
-	h1.cm$pv  <- rep(NA, NROW(pheY));
-	h1.cm$par <- parin.X;
-	parin.covar <- h0$par[-c(1:(length(obj.phe$est.curve$parX)+length(obj.phe$est.curve$param)))];
-	n.par.curve	<- get_param_info( obj.phe$obj.curve, pheT, options)$count;
-
-	optim.func <- function( parin, Y.delt, idx.k, pheT )
-	{
-		for(k in 0:2)
-		{
-			parin.curve <- parin[1:n.par.curve]
-			idx.k <- which(snp.vec==k);
-			if ( length(idx.k) >0 )
-			{
-				Y.delt[idx.k,] <- Y.delt[idx.k,,drop=F] - get_curve( obj.phe$obj.curve, parin.curve, pheT[idx.k,, drop=F], options=options );
-			}
-			parin <- parin[-c(1:n.par.curve)];
-		}
-		parin.covar <- parin;
-		mat.cov <- get_matrix( obj.phe$obj.covar, parin.covar, pheT );
-		pv <- try(dmvnorm_fast( Y.delt, rep(0, NCOL(mat.cov)), mat.cov, nna.vec, log=T), .RR("try.silent") );
-		if ( class(pv)=="try-error" || is.na(pv) )
-			return (NaN)
-		else
-			return(-sum(pv));
-	}
-
-	hx <- try( optim( c(rep(parin.curve,3), parin.covar), optim.func, Y.delt=Y.delt, idx.k=idx.k, pheT=pheT, method="BFGS"), .RR("try.silent") );
-	if( is.null(hx) || class(hx)=="try-error" || is.na(hx$value) || is.infinite(hx$value) )
-		return(list(par=c(h1.cm$par, c(rep(parin.curve,3), parin.covar )), value=NA, R2=NA));
-
-	h1.cm$par <- c( h1.cm$par, hx$par );
-	h1.cm$ssr   <- sum(Y.delt^2, na.rm=T);
-	h1.cm$R2 <- get_R2 (pheY, pheX, pheT, obj.phe$obj.curve, h1.cm$par, snp.vec);
-	h1.cm$value <- hx$value;
-
-	return( h1.cm );
+	return(h1x[[idx.min]]);
 }
