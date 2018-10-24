@@ -1,4 +1,4 @@
-# fGWAS/test
+# fGWAS
 
 The data analysis package for Functional Genome-wide Association Study(fGWAS)
 
